@@ -46,24 +46,37 @@ Grvl {
             var loopA = \loop_a.kr(1);
             var loopB = \loop_b.kr(1);
 
+            //var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
+            //var pm = inB * MouseY.kr(0, 200);
+            var pm = 0;
+
             var readA = BufRd.ar(
-                1, bufA, readWritePhaseA, loopA, \interp_a.kr(0)
+                1, bufA, readWritePhaseA + pm,
+                loopA, \interp_a.kr(0)
             );
             var readB = BufRd.ar(
-                1, bufB, readWritePhaseB, loopB, \interp_b.kr(0)
+                1, bufB, readWritePhaseB + pm,
+                loopB, \interp_b.kr(0)
             );
 
             var a = inA;
             var b = inB;
 
+            //TODO: ulaw bitcrusher
+            //    - waveshape & round pre-write, toggle waveshaping
+            //    - unwaveshape post-read, toggle unwaveshaping
+
             var writeA = a + (readA * \feedback_a.kr(0.5));
             var writeB = b + (readB * \feedback_b.kr(0.5));
 
             BufWr.ar(writeA, bufA, readWritePhaseA, loopA);
-            BufWr.ar(writeB, bufB, readWritePhaseB, loopB);
+            BufWr.ar(writeB, bufB,
+                readWritePhaseB,
+                loopB
+            );
 
-            outA = Pan2.ar(readA, \out_pan_a.kr(-1));
-            outB = Pan2.ar(readB, \out_pan_b.kr(1));
+            outA = Pan2.ar(readA * \out_amp_a.kr(1), \out_pan_a.kr(-1));
+            outB = Pan2.ar(readB * \out_amp_b.kr(1), \out_pan_b.kr(1));
 
             Out.ar(\outBus.kr(0), outA + outB);
         }).add;
