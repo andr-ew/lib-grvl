@@ -118,6 +118,14 @@ Grvl {
             },
             format: \i
         ));
+        commands.put(\clear_buf, (
+            oscFunc: { arg msg;
+                msg.postln;
+
+                buffers[msg[1] - 1].zero;
+            },
+            format: \i
+        ));
 
         s = Server.default;
 
