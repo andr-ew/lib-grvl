@@ -3,7 +3,7 @@ Grvl {
 
     var s;
     var <def;
-    var <commandNames;
+    var <commands;
     var <synth;
     var <buffers;
 
@@ -12,9 +12,12 @@ Grvl {
 	}
 
 	init {
-        //synthdef controls not to make into engine commands
+        //NamedControls not to auto-make into commands
         var notCommand = [\outBus, \loopBufA, \loopBufB];
 
+        commands = Dictionary.new();
+
+        //the synthdef
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
             var bufA = \loopBufA.kr(0);
@@ -81,13 +84,40 @@ Grvl {
             Out.ar(\outBus.kr(0), outA + outB);
         }).add;
 
-        //make list of commands from NamedControls
-        commandNames = List.new();
+
+        //add the rest of NamedControls to commands w/ callback
         def.allControlNames.do({ arg c;
-            if(notCommand.indexOf(c.name).isNil, {
-                commandNames.add(c.name);
+            var name = c.name;
+
+            if(notCommand.indexOf(name).isNil, {
+                commands.put(name, (
+                    oscFunc: { arg msg;
+                        msg.postln;
+
+                        synth.set(name, msg[1])
+                    },
+                    format: \f,
+                ));
             });
         });
+
+        //add buffer assignment commands
+        commands.put(\buf_a, (
+            oscFunc: { arg msg;
+                msg.postln;
+
+                synth.set(\loopBufA, buffers[msg[1] - 1].bufnum)
+            },
+            format: \i
+        ));
+        commands.put(\buf_b, (
+            oscFunc: { arg msg;
+                msg.postln;
+
+                synth.set(\loopBufB, buffers[msg[1] - 1].bufnum)
+            },
+            format: \i
+        ));
 
         s = Server.default;
 
@@ -96,8 +126,6 @@ Grvl {
         s.sync;
         synth = Synth.new(\grvl, [\loopBufA, buffers[0].bufnum, \loopBufB, buffers[1].bufnum]);
         s.sync;
-
-        //TODO: buffer re-assignment functions
 
         postln("🪨 layin' gravel 🪨");
 	}
