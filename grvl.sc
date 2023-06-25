@@ -29,7 +29,7 @@ Grvl {
             );
             var readWritePhaseB = Phasor.ar(
                 0,
-                BufRateScale.kr(bufB) * \rate_b.kr(0.5),
+                BufRateScale.kr(bufB) * \rate_b.kr(1),
                 BufFrames.kr(bufB) * \start_b_minutes.kr(0),
                 BufFrames.kr(bufB) * \end_b_minutes.kr(1/60)
             );
@@ -46,7 +46,7 @@ Grvl {
             var loopA = \loop_a.kr(1);
             var loopB = \loop_b.kr(1);
 
-            //var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
+            // var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
             //var pm = inB * MouseY.kr(0, 200);
             var pm = 0;
 
