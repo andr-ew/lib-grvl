@@ -26,6 +26,9 @@ Grvl {
             readA, readB,
             writeA, writeB;
 
+            var loopA = \loop_a.kr(1);
+            var loopB = \loop_b.kr(1);
+
             var readWritePhaseA = Phasor.ar(
                 0,
                 BufRateScale.kr(bufA) * \rate_a.kr(1),
@@ -39,21 +42,18 @@ Grvl {
                 BufFrames.kr(bufB) * \end_b_minutes.kr(1/60)
             );
 
-            var inA = Mix.ar(
-                extIn * [\amp_in_left_a.kr(1), \amp_in_right_a.kr(0)]
-            );
-            var inB = Mix.ar(
-                extIn * [\amp_in_left_b.kr(0), \amp_in_right_b.kr(1)]
-            );
-
             //TODO: read-only phasors, Select.kr to choose
-
-            var loopA = \loop_a.kr(1);
-            var loopB = \loop_b.kr(1);
 
             // var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
             //var pm = inB * MouseY.kr(0, 200);
             var pm = 0;
+
+            var inA = Mix.ar(
+                extIn * [\in_amp_left_a.kr(1), \in_amp_right_a.kr(0)]
+            );
+            var inB = Mix.ar(
+                extIn * [\in_amp_left_b.kr(0), \in_amp_right_b.kr(1)]
+            );
 
             readA = BufRd.ar(
                 1, bufA, readWritePhaseA + pm,
@@ -72,8 +72,8 @@ Grvl {
             readA = Slew.ar(readA, \smooth_a.kr(20000), \smooth_a.kr(20000));
             readB = Slew.ar(readB, \smooth_b.kr(20000), \smooth_b.kr(20000));
 
-            writeA = inA + (readA * \feedback_a.kr(0.5));
-            writeB = inA + (readB * \feedback_b.kr(0.5));
+            writeA = (inA * \rec_amp_a.kr(1)) + (readA * \feedback_amp_a.kr(0.5));
+            writeB = (inB * \rec_amp_b.kr(1)) + (readB * \feedback_amp_b.kr(0.5));
 
             BufWr.ar(writeA, bufA, readWritePhaseA - 1, loopA);
             BufWr.ar(writeB, bufB, readWritePhaseB - 1, loopB);
