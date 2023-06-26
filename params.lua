@@ -100,4 +100,6 @@ for chan = 1,2 do
         controlspec = cs.def{ min = 0, max = max_time, default = max_time },
         action = actions.rate_start_end,
     }
+
+    --TODO: smooth, interp
 end
