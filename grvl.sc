@@ -20,66 +20,59 @@ Grvl {
         //the synthdef
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
-            var bufA = \loopBufA.kr(0);
-            var bufB = \loopBufB.kr(0);
-            var outA, outB,
-            readA, readB,
-            writeA, writeB;
+            var buf = [\loopBufA.kr(0), \loopBufB.kr(0)];
+            var read, write, outA, outB;
 
-            var loopA = \loop_a.kr(1);
-            var loopB = \loop_b.kr(1);
+            var loop = [\loop_a.kr(1), \loop_b.kr(1)];
 
-            var readWritePhaseA = Phasor.ar(
+            var readWritePhase = Phasor.ar(
                 0,
-                BufRateScale.kr(bufA) * \rate_a.kr(1),
-                BufFrames.kr(bufA) * \start_a_minutes.kr(0),
-                BufFrames.kr(bufA) * \end_a_minutes.kr(1/60)
-            );
-            var readWritePhaseB = Phasor.ar(
-                0,
-                BufRateScale.kr(bufB) * \rate_b.kr(1),
-                BufFrames.kr(bufB) * \start_b_minutes.kr(0),
-                BufFrames.kr(bufB) * \end_b_minutes.kr(1/60)
+                BufRateScale.kr(buf) * [\rate_a.kr(1), \rate_b.kr(1)],
+                BufFrames.kr(buf) * [\start_a_minutes.kr(0), \start_b_minutes.kr(0)],
+                BufFrames.kr(buf) * [\end_a_minutes.kr(1/60), \end_b_minutes.kr(1/60)]
             );
 
             //TODO: read-only phasors, Select.kr to choose
 
             // var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
             //var pm = inB * MouseY.kr(0, 200);
-            var pm = 0;
+            var pm = [0, 0];
 
-            var inA = Mix.ar(
-                extIn * [\in_amp_left_a.kr(1), \in_amp_right_a.kr(0)]
-            );
-            var inB = Mix.ar(
-                extIn * [\in_amp_left_b.kr(0), \in_amp_right_b.kr(1)]
+            var in = [
+                Mix.ar(
+                    extIn * [\in_amp_left_a.kr(1), \in_amp_right_a.kr(0)]
+                ),
+                Mix.ar(
+                    extIn * [\in_amp_left_b.kr(0), \in_amp_right_b.kr(1)]
+                )
+            ];
+
+            read = BufRd.ar(
+                1, buf, readWritePhase + pm,
+                loop, [\interp_a.kr(0), \interp_b.kr(0)]
             );
 
-            readA = BufRd.ar(
-                1, bufA, readWritePhaseA + pm,
-                loopA, \interp_a.kr(0)
-            );
-            readB = BufRd.ar(
-                1, bufB, readWritePhaseB + pm,
-                loopB, \interp_b.kr(0)
-            );
+
 
             //TODO: ulaw bitcrusher
             //    - waveshape & round pre-write, toggle waveshaping
             //    - unwaveshape post-read, toggle unwaveshaping
 
             //smooth out some high freqs
-            readA = Slew.ar(readA, \smooth_a.kr(20000), \smooth_a.kr(20000));
-            readB = Slew.ar(readB, \smooth_b.kr(20000), \smooth_b.kr(20000));
+            read = Slew.ar(
+                read,
+                [\smooth_a.kr(20000), \smooth_b.kr(20000)],
+                [\smooth_a.kr(20000), \smooth_b.kr(20000)],
+            );
 
-            writeA = (inA * \rec_amp_a.kr(1)) + (readA * \feedback_amp_a.kr(0.5));
-            writeB = (inB * \rec_amp_b.kr(1)) + (readB * \feedback_amp_b.kr(0.5));
+            write = (in * [\rec_amp_a.kr(1), \rec_amp_b.kr(1)])
+            + (read * [\feedback_amp_a.kr(0.5), \feedback_amp_b.kr(0.5)]);
 
-            BufWr.ar(writeA, bufA, readWritePhaseA - 1, loopA);
-            BufWr.ar(writeB, bufB, readWritePhaseB - 1, loopB);
+            BufWr.ar(write[0], buf[0], readWritePhase[0] - 1, loop[0]);
+            BufWr.ar(write[1], buf[1], readWritePhase[1] - 1, loop[1]);
 
-            outA = Pan2.ar(readA * \out_amp_a.kr(1), \out_pan_a.kr(-1));
-            outB = Pan2.ar(readB * \out_amp_b.kr(1), \out_pan_b.kr(1));
+            outA = Pan2.ar(read[0] * \out_amp_a.kr(1), \out_pan_a.kr(-1));
+            outB = Pan2.ar(read[1] * \out_amp_b.kr(1), \out_pan_b.kr(1));
 
             Out.ar(\outBus.kr(0), outA + outB);
         }).add;
