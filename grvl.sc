@@ -22,7 +22,9 @@ Grvl {
             var extIn = SoundIn.ar([0,1]);
             var bufA = \loopBufA.kr(0);
             var bufB = \loopBufB.kr(0);
-            var outA, outB;
+            var outA, outB,
+            readA, readB,
+            writeA, writeB;
 
             var readWritePhaseA = Phasor.ar(
                 0,
@@ -53,30 +55,28 @@ Grvl {
             //var pm = inB * MouseY.kr(0, 200);
             var pm = 0;
 
-            var readA = BufRd.ar(
+            readA = BufRd.ar(
                 1, bufA, readWritePhaseA + pm,
                 loopA, \interp_a.kr(0)
             );
-            var readB = BufRd.ar(
+            readB = BufRd.ar(
                 1, bufB, readWritePhaseB + pm,
                 loopB, \interp_b.kr(0)
             );
-
-            var a = inA;
-            var b = inB;
 
             //TODO: ulaw bitcrusher
             //    - waveshape & round pre-write, toggle waveshaping
             //    - unwaveshape post-read, toggle unwaveshaping
 
-            var writeA = a + (readA * \feedback_a.kr(0.5));
-            var writeB = b + (readB * \feedback_b.kr(0.5));
+            //smooth out some high freqs
+            readA = Slew.ar(readA, \smooth_a.kr(20000), \smooth_a.kr(20000));
+            readB = Slew.ar(readB, \smooth_b.kr(20000), \smooth_b.kr(20000));
 
-            BufWr.ar(writeA, bufA, readWritePhaseA, loopA);
-            BufWr.ar(writeB, bufB,
-                readWritePhaseB,
-                loopB
-            );
+            writeA = inA + (readA * \feedback_a.kr(0.5));
+            writeB = inA + (readB * \feedback_b.kr(0.5));
+
+            BufWr.ar(writeA, bufA, readWritePhaseA - 1, loopA);
+            BufWr.ar(writeB, bufB, readWritePhaseB - 1, loopB);
 
             outA = Pan2.ar(readA * \out_amp_a.kr(1), \out_pan_a.kr(-1));
             outB = Pan2.ar(readB * \out_amp_b.kr(1), \out_pan_b.kr(1));
@@ -118,6 +118,8 @@ Grvl {
             },
             format: \i
         ));
+
+        //add buffer clearing command
         commands.put(\clear_buf, (
             oscFunc: { arg msg;
                 msg.postln;
@@ -126,6 +128,9 @@ Grvl {
             },
             format: \i
         ));
+
+
+        //TODO: buffer read & write
 
         s = Server.default;
 
