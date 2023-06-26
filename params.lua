@@ -5,7 +5,7 @@ params:add{
     max = 2,
     default = -1,
     action = function(value)
-        engine.rate_b(2^value)
+        engine.rate(2, 2^value)
 
         crops.dirty.grid = true
     end
