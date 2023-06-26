@@ -1,5 +1,6 @@
 Grvl {
     const maxLoopTime = 60;
+    const chans = 2;
 
     var s;
     var <def;
@@ -13,46 +14,47 @@ Grvl {
 
 	init {
         //NamedControls not to auto-make into commands
-        var notCommand = [\outBus, \loopBufA, \loopBufB];
+        var notCommand = [\outBus, \loopBuf];
 
         commands = Dictionary.new();
 
         //the synthdef
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
-            var buf = [\loopBufA.kr(0), \loopBufB.kr(0)];
-            var read, write, outA, outB;
+            var buf = \loopBuf.kr(0!chans);
+            var read, write, out;
 
-            var loop = [\loop_a.kr(1), \loop_b.kr(1)];
+            var loop = \loop.kr(1!chans);
+            var out_amp = \out_amp.kr(1!chans);
+            var out_pan = \out_pan.kr([-1, 1]);
 
             var readWritePhase = Phasor.ar(
                 0,
-                BufRateScale.kr(buf) * [\rate_a.kr(1), \rate_b.kr(1)],
-                BufFrames.kr(buf) * [\start_a_minutes.kr(0), \start_b_minutes.kr(0)],
-                BufFrames.kr(buf) * [\end_a_minutes.kr(1/60), \end_b_minutes.kr(1/60)]
+                BufRateScale.kr(buf) * \rate.kr(1!chans),
+                BufFrames.kr(buf) * \start_minutes.kr(0!chans),
+                BufFrames.kr(buf) * \end_minutes.kr((1/60)!chans)
             );
 
             //TODO: read-only phasors, Select.kr to choose
 
             // var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
             //var pm = inB * MouseY.kr(0, 200);
-            var pm = [0, 0];
+            var pm = 0!chans;
 
-            var in = [
-                Mix.ar(
-                    extIn * [\in_amp_left_a.kr(1), \in_amp_right_a.kr(0)]
-                ),
-                Mix.ar(
-                    extIn * [\in_amp_left_b.kr(0), \in_amp_right_b.kr(1)]
-                )
-            ];
+            var in_amp_left = \in_amp_left.kr([1, 0]);
+            var in_amp_right = \in_amp_right.kr([0, 1]);
+
+            var in = Mix.ar(
+                extIn * [
+                    [in_amp_left[0], in_amp_right[0]],
+                    [in_amp_left[1], in_amp_right[1]]
+                ]
+            );
 
             read = BufRd.ar(
                 1, buf, readWritePhase + pm,
-                loop, [\interp_a.kr(0), \interp_b.kr(0)]
+                loop, \interp.kr(0!chans)
             );
-
-
 
             //TODO: ulaw bitcrusher
             //    - waveshape & round pre-write, toggle waveshaping
@@ -61,20 +63,21 @@ Grvl {
             //smooth out some high freqs
             read = Slew.ar(
                 read,
-                [\smooth_a.kr(20000), \smooth_b.kr(20000)],
-                [\smooth_a.kr(20000), \smooth_b.kr(20000)],
+                \smooth.kr(20000!chans),
+                \smooth.kr(20000!chans)
             );
 
-            write = (in * [\rec_amp_a.kr(1), \rec_amp_b.kr(1)])
-            + (read * [\feedback_amp_a.kr(0.5), \feedback_amp_b.kr(0.5)]);
+            write = (in * \rec_amp.kr(1!chans)) + (read * \feedback_amp.kr(0.5!chans));
 
             BufWr.ar(write[0], buf[0], readWritePhase[0] - 1, loop[0]);
             BufWr.ar(write[1], buf[1], readWritePhase[1] - 1, loop[1]);
 
-            outA = Pan2.ar(read[0] * \out_amp_a.kr(1), \out_pan_a.kr(-1));
-            outB = Pan2.ar(read[1] * \out_amp_b.kr(1), \out_pan_b.kr(1));
+            out = [
+                Pan2.ar(read[0] * out_amp[0], out_pan[0]),
+                Pan2.ar(read[1] * out_amp[1], out_pan[1])
+            ];
 
-            Out.ar(\outBus.kr(0), outA + outB);
+            Out.ar(\outBus.kr(0), out[0] + out[1]);
         }).add;
 
 
@@ -87,29 +90,21 @@ Grvl {
                     oscFunc: { arg msg;
                         msg.postln;
 
-                        synth.set(name, msg[1])
+                        synth.seti(name, msg[1] - 1, msg[2])
                     },
-                    format: \f,
+                    format: \if,
                 ));
             });
         });
 
         //add buffer assignment commands
-        commands.put(\buf_a, (
+        commands.put(\buf, (
             oscFunc: { arg msg;
                 msg.postln;
 
-                synth.set(\loopBufA, buffers[msg[1] - 1].bufnum)
+                synth.seti(\loopBuf, msg[1] - 1, buffers[msg[2] - 1].bufnum)
             },
-            format: \i
-        ));
-        commands.put(\buf_b, (
-            oscFunc: { arg msg;
-                msg.postln;
-
-                synth.set(\loopBufB, buffers[msg[1] - 1].bufnum)
-            },
-            format: \i
+            format: \ii
         ));
 
         //add buffer clearing command
@@ -130,7 +125,7 @@ Grvl {
         buffers = Array.fill(2, { Buffer.alloc(s, s.sampleRate * maxLoopTime) });
 
         s.sync;
-        synth = Synth.new(\grvl, [\loopBufA, buffers[0].bufnum, \loopBufB, buffers[1].bufnum]);
+        synth = Synth.new(\grvl, [\loopBuf, [buffers[0].bufnum, buffers[1].bufnum]]);
         s.sync;
 
         postln("🪨 layin' gravel 🪨");
