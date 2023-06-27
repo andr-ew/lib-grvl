@@ -1,10 +1,17 @@
-local cs_lvl = cs.def{ min = 0, max = 5, default = 4, units = 'v' }
-
 for chan = 1,2 do
     local actions = {}
 
     function actions.record_feedback()
-        -- update engine.rec_amp & engine.feedback_amp based on record & feedback
+        local rec = params:get('record_'..chan)
+        local fb = params:get('feedback_'..chan)/5
+
+        if rec>0 then
+            engine.rec_amp(chan, 1)
+            engine.feedback_amp(chan, fb)
+        else
+            engine.rec_amp(chan, 0)
+            engine.feedback_amp(chan, 1)
+        end
         
         crops.dirty.grid = true
         crops.dirty.screen = true
@@ -12,7 +19,10 @@ for chan = 1,2 do
     end
 
     function actions.play_output_level()
-        -- upade engine.out_amp based on play & out_level
+        local play = params:get('play_'..chan)
+        local out = params:get('output_level_'..chan)
+
+        engine.out_amp(chan, out * play)
 
         crops.dirty.grid = true
         crops.dirty.screen = true
@@ -20,14 +30,30 @@ for chan = 1,2 do
     end
 
     function actions.clear()
-        -- clear buffer based on channel assignment
+        local buf = params:get('buffer_'..chan)
+
+        engine.clear_buf(buf)
 
         crops.dirty.grid = true
     end
 
     --TODO: update separate rate_write & rate_read commands
     function actions.rate_start_end()
-        -- update engine.rate based on reverse, oct, and rate 
+        -- local rev = params:get('reverse_'..chan)
+        local oct = params:get('octave_'..chan)
+        --TODO: rate
+        local st = params:get('loop_start_'..chan)
+        local en = params:get('loop_end_'..chan)
+
+        if st < en then
+            engine.rate(chan, 2^oct)
+            engine.start_minutes(chan, st/60)
+            engine.end_minutes(chan, en/60)
+        else
+            engine.rate(chan, -2^oct)
+            engine.start_minutes(chan, en/60)
+            engine.end_minutes(chan, st/60)
+        end
 
         crops.dirty.grid = true
         crops.dirty.screen = true
@@ -38,12 +64,12 @@ for chan = 1,2 do
     
     params:add{
         type = 'binary', behavior = 'toggle',
-        id = 'record_'..chan, id = 'record',
+        id = 'record_'..chan, name = 'record', default = 1,
         action = actions.record_feedback,
     }
     params:add{
         type = 'binary', behavior = 'toggle',
-        id = 'play_'..chan, id = 'play',
+        id = 'play_'..chan, name = 'play', default = 1,
         action = actions.play_output_level,
     }
     params:add{
@@ -54,39 +80,50 @@ for chan = 1,2 do
     params:add{
         type = 'number', id = 'buffer_'..chan, name = 'buffer',
         min = 1, max = 2, default = chan,
-        action = function(v) engine.buf(chan, v) end
+        action = function(v) 
+            engine.buf(chan, v) 
+
+            crops.dirty.grid = true
+        end
     }
 
-    --TODO: separate write & read params, couple params
-    params:add{
-        type = 'binary', behavior = 'toggle',
-        id = 'reverse_'..chan, id = 'reverse',
-        action = actions.rec_feedback,
-    }
+    -- params:add{
+    --     type = 'binary', behavior = 'toggle',
+    --     id = 'reverse_'..chan, name = 'reverse',
+    --     action = actions.rec_feedback,
+    -- }
+
+    --TODO: separate write & read params, couple param
     params:add{
         type = 'number', id = 'octave_'..chan, name = 'octave',
         min = -2, max = 2, default = 0,
-        action = actions.rate
+        action = actions.rate_start_end
     }
 
     --TODO: bits & shape-toggles
+    --TODO: feedback path options for bits (?)
 
     params:add{
         type = 'control', id = 'output_level_'..chan, name = 'output level',
-        controlspec = cs_lvl,
+        controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = actions.play_output_level
     }
     params:add{
         type = 'control', id = 'output_pan_'..chan, name = 'output pan',
-        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' }
+        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
         action = function(v)
             engine.output_pan_(chan, v/5)            
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     params:add{
         type = 'control', id = 'feedback_'..chan, name = 'feedback',
-        controlspec = cs_lvl, action = actions.record_feedback
+        controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
+        action = actions.record_feedback
     }
+    --TODO: rate (continuous control)
 
     local max_time = 4
 
