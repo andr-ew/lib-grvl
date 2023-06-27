@@ -8,7 +8,7 @@ a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora)
 
 **required**
 
-- [norns](https://github.com/p3r7/awesome-monome-norns) or [seamstress](https://github.com/ryleelyman/seamstress)
+- [norns](https://github.com/p3r7/awesome-monome-norns) or macOS/linux, via [seamstress](https://github.com/ryleelyman/seamstress)
 - [grid](https://monome.org/docs/grid/) (128 or 64)
 
 **also supported**
