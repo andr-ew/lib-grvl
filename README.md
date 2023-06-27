@@ -14,7 +14,7 @@ a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora)
 **also supported**
 
 - [crow](https://monome.org/docs/crow/)
-- arc
+- arc (2 or 4 rings)
 - midi mapping
 
 ## install
