@@ -35,4 +35,4 @@ see [grvl-seamstress](https://github.com/andr-ew/grvl-seamstress)
 
 ## grid
 
-![diagram of the grid interface. text description forthcoming](/lib/doc/grvl_grid.png)
+![diagram of the grid interface. text description forthcoming](/doc/grvl_grid.png)
