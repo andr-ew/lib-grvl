@@ -7,10 +7,29 @@ local function Channel()
 
     return function(props)
         local chan = props.channel
-        local right = props.side=='right'
-        local left = right and 8 or 0
+        local left, right = props.side=='left', props.size=='right'
 
-        
+        _rec{
+            x = left and 1 or 15,
+            y = 1,
+            levels = { 4, 15 },
+            state = crops.of_param('record_'..chan),
+        }
+        _play{
+            x = left and 2 or 16,
+            y = 1,
+            levels = { 4, 15 },
+            state = crops.of_param('play_'..chan),
+        }
+        _clear{
+            x = left and 1 or 16,
+            y = 2,
+            levels = { 4, 15 },
+            -- state = crops.of_param('clear_'..chan),
+            input = function()
+                params:delta('clear_'..chan)
+            end
+        }
     end
 end
 
@@ -19,9 +38,6 @@ local function App()
     for i = 1,2 do _channels[i] = Channel() end
 
     return function(props)
-        -- for _,_channel in ipairs(_channels) do
-        -- end
-
         _channels[1]{
             side = 'left', channel = 1,
         }

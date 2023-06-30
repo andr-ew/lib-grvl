@@ -1,3 +1,7 @@
+paramsMenu.highlightColors.r = 255
+paramsMenu.highlightColors.g = 95
+paramsMenu.highlightColors.b = 31
+
 for chan = 1,2 do
     local actions = {}
 
@@ -12,7 +16,7 @@ for chan = 1,2 do
             engine.rec_amp(chan, 0)
             engine.feedback_amp(chan, 1)
         end
-        
+
         crops.dirty.grid = true
         crops.dirty.screen = true
         crops.dirty.arc = true
@@ -20,10 +24,10 @@ for chan = 1,2 do
 
     function actions.play_output_level()
         local play = params:get('play_'..chan)
-        local out = params:get('output_level_'..chan)
+        local out = params:get('output_level_'..chan)/5
 
         engine.out_amp(chan, out * play)
-
+        
         crops.dirty.grid = true
         crops.dirty.screen = true
         crops.dirty.arc = true
@@ -31,7 +35,7 @@ for chan = 1,2 do
 
     function actions.clear()
         local buf = params:get('buffer_'..chan)
-
+        
         engine.clear_buf(buf)
 
         crops.dirty.grid = true
