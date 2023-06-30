@@ -27,12 +27,14 @@ Grvl {
             var loop = \loop.kr(1!chans);
             var out_amp = \out_amp.kr(1!chans);
             var out_pan = \out_pan.kr([-1, 1]);
+            var rate = \rate.kr(1!chans);
+            var bufFrames = BufFrames.kr(buf);
 
             var readWritePhase = Phasor.ar(
                 0,
-                BufRateScale.kr(buf) * \rate.kr(1!chans),
-                BufFrames.kr(buf) * \start_minutes.kr(0!chans),
-                BufFrames.kr(buf) * \end_minutes.kr((1/60)!chans)
+                BufRateScale.kr(buf) * rate,
+                bufFrames * \start_minutes.kr(0!chans),
+                bufFrames * \end_minutes.kr((1/60)!chans)
             );
 
             //TODO: read-only phasors, Select.kr to choose
@@ -69,8 +71,8 @@ Grvl {
 
             write = (in * \rec_amp.kr(1!chans)) + (read * \feedback_amp.kr(0.5!chans));
 
-            BufWr.ar(write[0], buf[0], readWritePhase[0] - 1, loop[0]);
-            BufWr.ar(write[1], buf[1], readWritePhase[1] - 1, loop[1]);
+            BufWr.ar(write[0], buf[0], readWritePhase[0] - (rate[0].sign * 2), loop[0]);
+            BufWr.ar(write[1], buf[1], readWritePhase[1] - (rate[1].sign * 2), loop[1]);
 
             out = [
                 Pan2.ar(read[0] * out_amp[0], out_pan[0]),

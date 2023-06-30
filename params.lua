@@ -43,18 +43,19 @@ for chan = 1,2 do
 
     --TODO: update separate rate_write & rate_read commands
     function actions.rate_start_end()
-        -- local rev = params:get('reverse_'..chan)
+        local rev = (params:get('reverse_'..chan)==0) and 1 or -1
         local oct = params:get('octave_'..chan)
         --TODO: rate
         local st = params:get('loop_start_'..chan)
         local en = params:get('loop_end_'..chan)
+        local r = 2^oct * rev
 
         if st < en then
-            engine.rate(chan, 2^oct)
+            engine.rate(chan, r)
             engine.start_minutes(chan, st/60)
             engine.end_minutes(chan, en/60)
         else
-            engine.rate(chan, -2^oct)
+            engine.rate(chan, -r)
             engine.start_minutes(chan, en/60)
             engine.end_minutes(chan, st/60)
         end
@@ -68,7 +69,7 @@ for chan = 1,2 do
     
     params:add{
         type = 'binary', behavior = 'toggle',
-        id = 'record_'..chan, name = 'record', default = 1,
+        id = 'record_'..chan, name = 'record', default = 0,
         action = actions.record_feedback,
     }
     params:add{
@@ -91,11 +92,11 @@ for chan = 1,2 do
         end
     }
 
-    -- params:add{
-    --     type = 'binary', behavior = 'toggle',
-    --     id = 'reverse_'..chan, name = 'reverse',
-    --     action = actions.rec_feedback,
-    -- }
+    params:add{
+        type = 'binary', behavior = 'toggle',
+        id = 'reverse_'..chan, name = 'reverse',
+        action = actions.rate_start_end,
+    }
 
     --TODO: separate write & read params, couple param
     params:add{
