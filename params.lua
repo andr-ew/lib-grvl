@@ -69,7 +69,7 @@ for chan = 1,2 do
     
     params:add{
         type = 'binary', behavior = 'toggle',
-        id = 'record_'..chan, name = 'record', default = 0,
+        id = 'record_'..chan, name = 'record', default = 1,
         action = actions.record_feedback,
     }
     params:add{

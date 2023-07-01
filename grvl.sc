@@ -62,12 +62,10 @@ Grvl {
             //    - waveshape & round pre-write, toggle waveshaping
             //    - unwaveshape post-read, toggle unwaveshaping
 
-            //smooth out some high freqs
-            read = Slew.ar(
-                read,
-                \smooth.kr(20000!chans),
-                \smooth.kr(20000!chans)
-            );
+            //filters for lazy declicking
+            read = SVF.ar(read, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
+            read = SVF.ar(read, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
+
 
             write = (in * \rec_amp.kr(1!chans)) + (read * \feedback_amp.kr(0.5!chans));
 
