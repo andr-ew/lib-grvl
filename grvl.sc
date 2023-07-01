@@ -3,6 +3,8 @@ Grvl {
     const chans = 2;
 
     var s;
+    var <tf;
+    var <tfBuf;
     var <def;
     var <commands;
     var <synth;
@@ -17,6 +19,20 @@ Grvl {
         var notCommand = [\outBus, \loopBuf];
 
         commands = Dictionary.new();
+
+        s = Server.default;
+
+        //analog waveshaper table by @ganders
+        tf = (Env([-0.7, 0, 0.7], [1,1], [8,-8]).asSignal(1025) + (
+            Signal.sineFill(
+                1025,
+                (0!3) ++ [0,0,1,1,0,1].scramble,
+                    {rrand(0,2pi)}!9
+                )/10;
+        )).normalize;
+        tfBuf = Buffer.loadCollection(s, tf.asWavetableNoWrap);
+
+        s.sync;
 
         //the synthdef
         def = SynthDef.new(\grvl, {
@@ -90,10 +106,12 @@ Grvl {
             var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
-            //TODO: waveshaper drive (using the tf wavetable)
+            var driven = XFade2.ar(lowpassed,
+                Shaper.ar(tfBuf, lowpassed), (\drive.kr(0.025)*2) - 1
+            );
 
-            var out = lowpassed;
-            var write = lowpassed;
+            var out = driven;
+            var write = driven;
 
             var out_amp = \out_amp.kr(1!chans);
             var out_pan = \out_pan.kr([-1, 1]);
@@ -156,8 +174,6 @@ Grvl {
         //TODO: buffer read & write
 
         //TODO: polls dict, add phase polls based phases sent out of dedicated busses
-
-        s = Server.default;
 
         buffers = Array.fill(2, { Buffer.alloc(s, s.sampleRate * maxLoopTime) });
 

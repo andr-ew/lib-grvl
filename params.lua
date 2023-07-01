@@ -119,8 +119,7 @@ for chan = 1,2 do
         end
     }
     --TODO: bitnoise?
-
-    --TODO: feedback path options for bits (?)
+    --TODO: drive
 
     params:add{
         type = 'control', id = 'output_level_'..chan, name = 'output level',
