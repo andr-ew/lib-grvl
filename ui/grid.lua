@@ -7,6 +7,8 @@ local function Channel()
     local _buffer = Grid.integer()
     
     local _bits = Grid.integer()
+    local _uwrite = Grid.toggle()
+    local _uread = Grid.toggle()
 
     local _start = Grid.integer()
     local _end = Grid.integer()
@@ -43,6 +45,16 @@ local function Channel()
             x = left and 0 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
             state = crops.of_param('bit_depth_'..chan),
+        }
+        _uwrite{
+            x = left and 1 or 16, y = 7,
+            levels = { 4, 15 },
+            state = crops.of_param('ulaw_write_'..chan),
+        }
+        _uread{
+            x = left and 1 or 16, y = 8,
+            levels = { 4, 15 },
+            state = crops.of_param('ulaw_read_'..chan),
         }
                 
 

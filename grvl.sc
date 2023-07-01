@@ -70,7 +70,7 @@ Grvl {
             );
             var shape = comped;
             var shaped = shape.sign * log(1 + (mu * shape.abs)) / log(1 + mu);
-            var round = shaped;
+            var round = Select.ar(\shape_enable.kr(1!chans), [shape, shaped]);
             var rounded = (
                 (round.abs * steps) + (
                     // 0
@@ -90,7 +90,7 @@ Grvl {
             var unshape = read;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
-            var filter = unshaped;
+            var filter = Select.ar(\unshape_enable.kr(1!chans), [unshape, unshaped]);
             var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 

@@ -118,6 +118,24 @@ for chan = 1,2 do
             crops.dirty.grid = true
         end
     }
+    params:add{
+        type = 'binary', behavior = 'toggle',
+        id = 'ulaw_write_'..chan, name = 'μ-law write', default = 1,
+        action = function(v)
+            engine.shape_enable(chan, v)
+
+            crops.dirty.grid = true
+        end
+    }
+    params:add{
+        type = 'binary', behavior = 'toggle',
+        id = 'ulaw_read_'..chan, name = 'μ-law read', default = 1,
+        action = function(v)
+            engine.unshape_enable(chan, v)
+
+            crops.dirty.grid = true
+        end
+    }
     --TODO: bitnoise?
 
     --TODO: feedback path options for bits (?)
