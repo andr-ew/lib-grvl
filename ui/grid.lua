@@ -5,11 +5,13 @@ local function Channel()
     local _play = Grid.toggle()
     local _clear = Grid.trigger()
     local _buffer = Grid.integer()
+    
+    local _bits = Grid.integer()
 
-    local _reverse = Grid.toggle()
-    local _oct = Grid.integer()
     local _start = Grid.integer()
     local _end = Grid.integer()
+    local _reverse = Grid.toggle()
+    local _oct = Grid.integer()
 
     return function(props)
         local chan = props.channel
@@ -37,16 +39,12 @@ local function Channel()
             state = crops.of_param('buffer_'..chan),
         }
 
-        _reverse{
-            x = left and 2 or 9, y = 7,
-            levels = { 4, 15 },
-            state = crops.of_param('reverse_'..chan),
+        _bits{
+            x = left and 0 or 11, y = 4, size = 6, 
+            min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
+            state = crops.of_param('bit_depth_'..chan),
         }
-        _oct{
-            x = left and 3 or 10, y = 7,
-            size = 5, min = -2,
-            state = crops.of_param('octave_'..chan),
-        }
+                
 
         _start{
             x = left and 1 or 9, y = 5,
@@ -68,6 +66,17 @@ local function Channel()
                 end
             }
         }
+        _reverse{
+            x = left and 2 or 9, y = 7,
+            levels = { 4, 15 },
+            state = crops.of_param('reverse_'..chan),
+        }
+        _oct{
+            x = left and 3 or 10, y = 7,
+            size = 5, min = -2,
+            state = crops.of_param('octave_'..chan),
+        }
+
     end
 end
 

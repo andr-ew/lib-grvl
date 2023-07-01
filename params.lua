@@ -105,7 +105,17 @@ for chan = 1,2 do
         action = actions.rate_start_end
     }
 
-    --TODO: bits & shape-toggles
+    params:add{
+        type = 'control', id = 'bit_depth_'..chan, name = 'bit depth',
+        controlspec = cs.def{ min = 4, max = 9, default = 9 },
+        action = function(v) 
+            engine.bit_depth(chan, v) 
+
+            crops.dirty.grid = true
+        end
+    }
+    --TODO: bitnoise?
+
     --TODO: feedback path options for bits (?)
 
     params:add{

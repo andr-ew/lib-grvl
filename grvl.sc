@@ -21,15 +21,11 @@ Grvl {
         //the synthdef
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
-            var buf = \loopBuf.kr(0!chans);
-            var read, write, out;
 
-            var loop = \loop.kr(1!chans);
-            var out_amp = \out_amp.kr(1!chans);
-            var out_pan = \out_pan.kr([-1, 1]);
-            var rate = \rate.kr(1!chans);
+            var buf = \loopBuf.kr(0!chans);
             var bufFrames = BufFrames.kr(buf);
-            var off = \head_offset.kr(2!chans);
+
+            var rate = \rate.kr(1!chans, \rate_slew.kr(0));
 
             var readWritePhase = Phasor.ar(
                 0,
@@ -37,16 +33,16 @@ Grvl {
                 bufFrames * \start_minutes.kr(0!chans),
                 bufFrames * \end_minutes.kr((1/60)!chans)
             );
+            //TODO: read-only phasor, Select.kr to choose
 
-            //TODO: read-only phasors, Select.kr to choose
+            // var mod = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
+            //var mod = inB * MouseY.kr(0, 200);
 
-            // var pm = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
-            //var pm = inB * MouseY.kr(0, 200);
-            var pm = 0!chans;
+            //TODO: mod sources: L, R, LFTri, LFSaw, LFPulse, GrayNoise
+            var mod = 0!chans;
 
             var in_amp_left = \in_amp_left.kr([1, 0]);
             var in_amp_right = \in_amp_right.kr([0, 1]);
-
             var in = Mix.ar(
                 extIn * [
                     [in_amp_left[0], in_amp_right[0]],
@@ -54,31 +50,66 @@ Grvl {
                 ]
             );
 
-            read = BufRd.ar(
-                1, buf, readWritePhase + pm,
+            var loop = \loop.kr(1!chans);
+
+            //TODO: pm depth read
+            var read = BufRd.ar(
+                1, buf, readWritePhase + mod,
                 loop, \interp.kr(0!chans)
             );
 
-            //TODO: ulaw bitcrusher
-            //    - waveshape & round pre-write, toggle waveshaping
-            //    - unwaveshape post-read, toggle unwaveshaping
+            //TODO: filer paths: output, feedback loop, bypass
+            //TODO: lp/hp fm from mod depth
+            var steps = 2.pow(\bit_depth.kr(8!chans));
+            var mu = steps.sqrt;
+            // var mu = 255;
 
-            // hp/lp filters for lazy declicking
-            read = SVF.ar(read, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
-            read = SVF.ar(read, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
+            //TODO: shape & unshape bypass
+            var comp = read;
+            var comped = Compander.ar(comp, comp, //limiter/compression
+                thresh: 1,
+                slopeBelow: 1,
+                slopeAbove: 0.5,
+                clampTime:  0.01,
+                relaxTime:  0.01
+            );
+            var shape = comped;
+            var shaped = shape.sign * log(1 + (mu * shape.abs)) / log(1 + mu);
+            var round = shaped;
+            var rounded = (
+                (round.abs * steps) + (
+                    // 0
+                    \bitnoise.kr(0.5!chans) * GrayNoise.ar(1!chans)
+                    * (0.25 + CoinGate.ar(0.125, Dust.ar(0!chans)))
+                )
+            ).round * round.sign / steps;
+            var unshape = rounded;
+            var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
+            var filter = unshaped;
+            var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
+            var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
-            write = (in * \rec_amp.kr(1!chans)) + (read * \feedback_amp.kr(0.5!chans));
+            //TODO: bitcrush paths: read/write, feedback/not feedback
 
-            BufWr.ar(write[0], buf[0], readWritePhase[0] - (rate[0].sign * off), loop[0]);
-            BufWr.ar(write[1], buf[1], readWritePhase[1] - (rate[1].sign * off), loop[1]);
+            var out = filter;
+            var write = filter;
 
-            out = [
-                Pan2.ar(read[0] * out_amp[0], out_pan[0]),
-                Pan2.ar(read[1] * out_amp[1], out_pan[1])
+            var out_amp = \out_amp.kr(1!chans);
+            var out_pan = \out_pan.kr([-1, 1]);
+            var outMixed = [
+                Pan2.ar(out[0] * out_amp[0], out_pan[0]),
+                Pan2.ar(out[1] * out_amp[1], out_pan[1])
             ];
 
-            Out.ar(\outBus.kr(0), out[0] + out[1]);
+            var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
+            var off = \head_offset.kr(2!chans);
+
+            //TODO: pm depth read write
+            BufWr.ar(writeMixed[0], buf[0], readWritePhase[0] - (rate[0].sign * off), loop[0]);
+            BufWr.ar(writeMixed[1], buf[1], readWritePhase[1] - (rate[1].sign * off), loop[1]);
+
+            Out.ar(\outBus.kr(0), outMixed[0] + outMixed[1]);
         }).add;
 
 
@@ -118,8 +149,9 @@ Grvl {
             format: \i
         ));
 
-
         //TODO: buffer read & write
+
+        //TODO: polls dict, add phase polls based phases sent out of dedicated busses
 
         s = Server.default;
 
