@@ -7,6 +7,7 @@ local function Channel()
     local _buffer = Grid.integer()
     
     local _bits = Grid.integer()
+    local _silt = Grid.integer()
 
     local _start = Grid.integer()
     local _end = Grid.integer()
@@ -40,11 +41,20 @@ local function Channel()
         }
 
         _bits{
-            x = left and 0 or 11, y = 4, size = 6, 
+            x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
             state = crops.of_param('bit_depth_'..chan),
         }
-                
+        _silt{
+            x = left and 6 or 11, y = 1, 
+            size = 3, flow = 'down', min = -1,
+            state = {
+                util.round(params:get('silt_'..chan)),
+                function(v)
+                    params:set('silt_'..chan, v)
+                end
+            }
+        }
 
         _start{
             x = left and 1 or 9, y = 5,
@@ -67,13 +77,13 @@ local function Channel()
             }
         }
         _reverse{
-            x = left and 2 or 9, y = 7,
+            x = left and 1 or 9, y = 7,
             levels = { 4, 15 },
             state = crops.of_param('reverse_'..chan),
         }
         _oct{
-            x = left and 3 or 10, y = 7,
-            size = 5, min = -2,
+            x = left and 2 or 10, y = 7,
+            size = 6, min = -3,
             state = crops.of_param('octave_'..chan),
         }
 

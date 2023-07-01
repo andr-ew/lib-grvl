@@ -103,9 +103,10 @@ for chan = 1,2 do
     }
 
     --TODO: separate write & read params, couple param
+    --TODO: rate slew
     params:add{
         type = 'number', id = 'octave_'..chan, name = 'octave',
-        min = -2, max = 2, default = 0,
+        min = -3, max = 2, default = 0,
         action = actions.rate_start_end
     }
 
@@ -118,6 +119,16 @@ for chan = 1,2 do
             crops.dirty.grid = true
         end
     }
+    params:add{
+        type = 'number', id = 'silt_'..chan, name = 'silt',
+        min = -5, max = 2, default = 1,
+        action = function(v) 
+            engine.head_offset(chan, v) 
+
+            crops.dirty.grid = true
+        end
+    }
+    
     --TODO: bitnoise?
     --TODO: drive
 
