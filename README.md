@@ -41,19 +41,23 @@ TODO: silt (`enigne.head_offset`, 0-2)
 
 ## arc
 
-- lvl, fb
-- pm frq, pm depth
-- start, end
-- end, rate
+| ch 1    | ch 1    | ch 2    | ch 2    |
+| ------- | ------- | ------- | ------- |
+| lvl     | fb      | lvl     | fb      |
+| pm frq  | pm depth| pm frq  | pm depth|
+| start   | end     | start   | end     |
+| end     | rate    | end     | rate    |
+
+horizontal & vertical orientation via arc focus componet, hold two keys to flip
 
 ## norns
 
 - E1: page/chan focus
 - E2-E3:
-  - lvl, fb
-  - pm frq, pm depth
+  - lvl, pan
   - start, end
-  - pan, rate
+  - fb, rate
+  - lp frq, lp q
 - K2-K3 (hold) + other UI element: assign mod src 1/2
 - K1 (hold) + K2-K3: assign mod sources
 
