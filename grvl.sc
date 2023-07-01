@@ -52,11 +52,6 @@ Grvl {
 
             var loop = \loop.kr(1!chans);
 
-            //TODO: pm depth read
-            var read = BufRd.ar(
-                1, buf, readWritePhase + mod,
-                loop, \interp.kr(0!chans)
-            );
 
             //TODO: filter: bypass
             //TODO: lp/hp fm from mod depth
@@ -65,7 +60,7 @@ Grvl {
             // var mu = 255;
 
             //TODO: shape & unshape bypass
-            var comp = read;
+            var comp = in;
             var comped = Compander.ar(comp, comp, //limiter/compression
                 thresh: 1,
                 slopeBelow: 1,
@@ -83,7 +78,16 @@ Grvl {
                     * (0.25 + CoinGate.ar(0.125, Dust.ar(0!chans)))
                 )
             ).round * round.sign / steps;
-            var unshape = rounded;
+
+            var write = rounded;
+
+            //TODO: pm depth read
+            var read = BufRd.ar(
+                1, buf, readWritePhase + mod,
+                loop, \interp.kr(0!chans)
+            );
+
+            var unshape = read;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
             var filter = unshaped;
@@ -92,8 +96,13 @@ Grvl {
 
             //TODO: waveshaper drive (using the tf wavetable)
 
-            var out = filter;
-            var write = filter;
+            var out = lowpassed;
+            var feedback = lowpassed;
+
+            var writeMixed = (
+                (write * \rec_amp.kr(1!chans))
+                + (feedback * \feedback_amp.kr(0.5!chans))
+            );
 
             var out_amp = \out_amp.kr(1!chans);
             var out_pan = \out_pan.kr([-1, 1]);
@@ -102,7 +111,6 @@ Grvl {
                 Pan2.ar(out[1] * out_amp[1], out_pan[1])
             ];
 
-            var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
             var offsetReadPhase = readWritePhase - (rate.sign * \head_offset.kr(2!chans));
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),
