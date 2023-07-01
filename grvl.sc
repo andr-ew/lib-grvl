@@ -90,6 +90,8 @@ Grvl {
             var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
+            //TODO: waveshaper drive (using the tf wavetable)
+
             var out = filter;
             var write = filter;
 
