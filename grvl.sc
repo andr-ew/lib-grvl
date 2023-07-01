@@ -29,6 +29,7 @@ Grvl {
             var out_pan = \out_pan.kr([-1, 1]);
             var rate = \rate.kr(1!chans);
             var bufFrames = BufFrames.kr(buf);
+            var off = \head_offset.kr(2!chans);
 
             var readWritePhase = Phasor.ar(
                 0,
@@ -62,15 +63,15 @@ Grvl {
             //    - waveshape & round pre-write, toggle waveshaping
             //    - unwaveshape post-read, toggle unwaveshaping
 
-            //filters for lazy declicking
+            // hp/lp filters for lazy declicking
             read = SVF.ar(read, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             read = SVF.ar(read, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
 
             write = (in * \rec_amp.kr(1!chans)) + (read * \feedback_amp.kr(0.5!chans));
 
-            BufWr.ar(write[0], buf[0], readWritePhase[0] - (rate[0].sign * 2), loop[0]);
-            BufWr.ar(write[1], buf[1], readWritePhase[1] - (rate[1].sign * 2), loop[1]);
+            BufWr.ar(write[0], buf[0], readWritePhase[0] - (rate[0].sign * off), loop[0]);
+            BufWr.ar(write[1], buf[1], readWritePhase[1] - (rate[1].sign * off), loop[1]);
 
             out = [
                 Pan2.ar(read[0] * out_amp[0], out_pan[0]),

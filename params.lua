@@ -130,7 +130,7 @@ for chan = 1,2 do
     }
     --TODO: rate (continuous control)
 
-    local max_time = 4
+    local max_time = 7/4
 
     params:add{
         type = 'control', id = 'loop_start_'..chan, name = 'loop start',

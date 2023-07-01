@@ -7,6 +7,9 @@ local function Channel()
     local _buffer = Grid.integer()
 
     local _reverse = Grid.toggle()
+    local _oct = Grid.integer()
+    local _start = Grid.integer()
+    local _end = Grid.integer()
 
     return function(props)
         local chan = props.channel
@@ -38,6 +41,32 @@ local function Channel()
             x = left and 2 or 9, y = 7,
             levels = { 4, 15 },
             state = crops.of_param('reverse_'..chan),
+        }
+        _oct{
+            x = left and 3 or 10, y = 7,
+            size = 5, min = -2,
+            state = crops.of_param('octave_'..chan),
+        }
+
+        _start{
+            x = left and 1 or 9, y = 5,
+            size = 8, min = 0,
+            state = {
+                util.round(params:get('loop_start_'..chan) * 4),
+                function(v)
+                    params:set('loop_start_'..chan, v / 4)
+                end
+            }
+        }
+        _end{
+            x = left and 1 or 9, y = 6,
+            size = 8, min = 0,
+            state = {
+                util.round(params:get('loop_end_'..chan) * 4),
+                function(v)
+                    params:set('loop_end_'..chan, v / 4)
+                end
+            }
         }
     end
 end
