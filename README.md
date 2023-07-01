@@ -37,6 +37,8 @@ see [grvl-seamstress](https://github.com/andr-ew/grvl-seamstress)
 
 ![diagram of the grid interface. text description forthcoming](/doc/grvl_grid.png)
 
+TODO: silt (`enigne.head_offset`, 0-2)
+
 ## arc
 
 - lvl, fb
