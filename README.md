@@ -37,6 +37,13 @@ see [grvl-seamstress](https://github.com/andr-ew/grvl-seamstress)
 
 ![diagram of the grid interface. text description forthcoming](/doc/grvl_grid.png)
 
+## arc
+
+- lvl, fb
+- pm frq, pm depth
+- start, end
+- end, rate
+
 ## norns
 
 - E1: page/chan focus
