@@ -6,17 +6,18 @@ a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora)
 
 ## hardware
 
-**required**
+**computers**
 
-- [norns](https://github.com/p3r7/awesome-monome-norns) or macOS/linux, via [seamstress](https://github.com/ryleelyman/seamstress)
+- [norns](https://github.com/p3r7/awesome-monome-norns)
+- macOS/linux, via [seamstress](https://github.com/ryleelyman/seamstress) (planned)
+
+**input devices**
+
 - [grid](https://monome.org/docs/grid/) (128 or 64)
-
-**also supported**
-
+- querty keyboard (planned)
 - arc (2 or 4 rings)
 - midi mapping
 - [crow](https://monome.org/docs/crow/) (planned)
-- querty keyboard (planned)
 
 ## install
 
