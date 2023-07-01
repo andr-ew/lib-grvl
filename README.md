@@ -29,6 +29,8 @@ in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/inst
 ;install https://github.com/andr-ew/grvl/releases/download/latest/complete-source-code.zip
 ```
 
+TODO: silt (`enigne.head_offset`, 0-2)
+
 ### seamstress
 
 see [grvl-seamstress](https://github.com/andr-ew/grvl-seamstress)
