@@ -5,22 +5,22 @@ paramsMenu.highlightColors.b = 31
 for chan = 1,2 do
     local actions = {}
 
-    function actions.record_feedback()
-        local rec = params:get('record_'..chan)
-        local fb = params:get('feedback_'..chan)/5
+    -- function actions.record_feedback()
+    --     local rec = params:get('record_'..chan)
+    --     local fb = params:get('feedback_'..chan)/5
 
-        if rec>0 then
-            engine.rec_amp(chan, 1)
-            engine.feedback_amp(chan, fb)
-        else
-            engine.rec_amp(chan, 0)
-            engine.feedback_amp(chan, 1)
-        end
+    --     if rec>0 then
+    --         engine.rec_amp(chan, 1)
+    --         engine.feedback_amp(chan, fb)
+    --     else
+    --         engine.rec_amp(chan, 0)
+    --         engine.feedback_amp(chan, 1)
+    --     end
 
-        crops.dirty.grid = true
-        crops.dirty.screen = true
-        crops.dirty.arc = true
-    end
+    --     crops.dirty.grid = true
+    --     crops.dirty.screen = true
+    --     crops.dirty.arc = true
+    -- end
 
     function actions.play_output_level()
         local play = params:get('play_'..chan)
@@ -70,7 +70,11 @@ for chan = 1,2 do
     params:add{
         type = 'binary', behavior = 'toggle',
         id = 'record_'..chan, name = 'record', default = 1,
-        action = actions.record_feedback,
+        action = function(v)
+            engine.rec_enable(chan, v)
+
+            crops.dirty.grid = true
+        end
     }
     params:add{
         type = 'binary', behavior = 'toggle',
@@ -136,7 +140,12 @@ for chan = 1,2 do
     params:add{
         type = 'control', id = 'feedback_'..chan, name = 'feedback',
         controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
-        action = actions.record_feedback
+        action = function(v)
+            engine.feedback_amp(chan, v/5)            
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
     }
     --TODO: rate (continuous control)
 

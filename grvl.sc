@@ -58,7 +58,7 @@ Grvl {
                 loop, \interp.kr(0!chans)
             );
 
-            //TODO: filer paths: output, feedback loop, bypass
+            //TODO: filter: bypass
             //TODO: lp/hp fm from mod depth
             var steps = 2.pow(\bit_depth.kr(8!chans));
             var mu = steps.sqrt;
@@ -90,8 +90,6 @@ Grvl {
             var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
-            //TODO: bitcrush paths: read/write, feedback/not feedback
-
             var out = filter;
             var write = filter;
 
@@ -103,11 +101,15 @@ Grvl {
             ];
 
             var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
-            var off = \head_offset.kr(2!chans);
+            var offsetReadPhase = readWritePhase - (rate.sign * \head_offset.kr(2!chans));
+            var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
+                DC.ar(bufFrames),
+                offsetReadPhase
+            ]);
 
             //TODO: pm depth read write
-            BufWr.ar(writeMixed[0], buf[0], readWritePhase[0] - (rate[0].sign * off), loop[0]);
-            BufWr.ar(writeMixed[1], buf[1], readWritePhase[1] - (rate[1].sign * off), loop[1]);
+            BufWr.ar(writeMixed[0], buf[0], writePhase[0], loop[0]);
+            BufWr.ar(writeMixed[1], buf[1], writePhase[1], loop[1]);
 
             Out.ar(\outBus.kr(0), outMixed[0] + outMixed[1]);
         }).add;
