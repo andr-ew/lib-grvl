@@ -92,8 +92,8 @@ Grvl {
 
             //TODO: waveshaper drive (using the tf wavetable)
 
-            var out = filter;
-            var write = filter;
+            var out = lowpassed;
+            var write = lowpassed;
 
             var out_amp = \out_amp.kr(1!chans);
             var out_pan = \out_pan.kr([-1, 1]);
