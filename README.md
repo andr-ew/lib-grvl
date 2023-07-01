@@ -48,7 +48,7 @@ TODO: silt (`enigne.head_offset`, 0-2)
 | start   | end     | start   | end     |
 | end     | rate    | end     | rate    |
 
-horizontal & vertical orientation via arc focus componet, hold two keys to flip
+horizontal & vertical orientation via arc focus component, hold two keys to flip
 
 ## norns
 
