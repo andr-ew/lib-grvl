@@ -54,10 +54,10 @@ horizontal & vertical orientation via arc focus component, hold two keys to flip
 
 - E1: page/chan focus
 - E2-E3:
-  - lvl, pan
+  - lvl, fb
+  - pm frq, pm depth
   - start, end
-  - fb, rate
-  - lp frq, lp q
+  - end, rate
 - K2-K3 (hold) + other UI element: assign mod src 1/2
 - K1 (hold) + K2-K3: assign mod sources
 
