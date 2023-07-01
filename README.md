@@ -1,21 +1,23 @@
 # grvl
 
-dual data pavement for grid + norns/seamstress.
+dual data pavement for grid + norns/seamstress. no de-clicking, no interpolation, variable sample rate & bit depth.
 
 a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora).
 
 ## hardware
 
-**required**
+**computers**
 
-- [norns](https://github.com/p3r7/awesome-monome-norns) or macOS/linux, via [seamstress](https://github.com/ryleelyman/seamstress)
+- [norns](https://github.com/p3r7/awesome-monome-norns)
+- macOS/linux, via [seamstress](https://github.com/ryleelyman/seamstress) (planned)
+
+**input devices**
+
 - [grid](https://monome.org/docs/grid/) (128 or 64)
-
-**also supported**
-
-- [crow](https://monome.org/docs/crow/)
+- querty keyboard (planned)
 - arc (2 or 4 rings)
 - midi mapping
+- [crow](https://monome.org/docs/crow/) (planned)
 
 ## install
 
@@ -41,10 +43,14 @@ TODO: silt (`enigne.head_offset`, 0-2)
 
 ## arc
 
-- lvl, fb
-- pm frq, pm depth
-- start, end
-- end, rate
+| ch 1    | ch 1    | ch 2    | ch 2    |
+| ------- | ------- | ------- | ------- |
+| lvl     | fb      | lvl     | fb      |
+| pm frq  | pm depth| pm frq  | pm depth|
+| start   | end     | start   | end     |
+| end     | rate    | end     | rate    |
+
+horizontal & vertical orientation via arc focus component, hold two keys to flip
 
 ## norns
 
@@ -53,7 +59,7 @@ TODO: silt (`enigne.head_offset`, 0-2)
   - lvl, fb
   - pm frq, pm depth
   - start, end
-  - pan, rate
+  - end, rate
 - K2-K3 (hold) + other UI element: assign mod src 1/2
 - K1 (hold) + K2-K3: assign mod sources
 
