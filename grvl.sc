@@ -57,19 +57,20 @@ Grvl {
             var rate_write = \rate_write.kr(1!chans, rate_slew);
 
             var readWritePhase = Phasor.ar(
-                0,
+                Trig.kr(\pos_trig_write.kr(0!chans)),
                 BufRateScale.kr(buf) * rate_write,
                 bufFrames * \start_minutes_write.kr(0!chans),
-                bufFrames * \end_minutes_write.kr((1/60)!chans)
+                bufFrames * \end_minutes_write.kr((1/60)!chans),
+                bufFrames * \pos_minutes_write.kr(0!chans),
             );
             var readOnlyPhase = Phasor.ar(
-                0,
+                Trig.kr(\pos_trig_read.kr(0!chans)),
                 BufRateScale.kr(buf) * \rate_read.kr(1!chans, rate_slew),
                 bufFrames * \start_minutes_read.kr(0!chans),
-                bufFrames * \end_minutes_read.kr((1/60)!chans)
+                bufFrames * \end_minutes_read.kr((1/60)!chans),
+                bufFrames * \pos_minutes_read.kr(0!chans),
             );
 
-            //TODO: pm depth read
             var readPhase = Select.ar(\couple_phases.kr(1!chans).asInteger, [
                 readOnlyPhase,
                 readWritePhase,
@@ -103,17 +104,15 @@ Grvl {
             var unshape = rounded;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
-            //TODO: lp/hp fm from mod depth
             var filter = unshaped;
             var highpassed = RHPF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(1));
             var lowpassed = MoogLadder.ar(
                 highpassed,
-                \lp_freq.kr(6000) + (mod * \mod_filter_freq.kr(0!chans)),
+                \lp_freq.kr(10000) + (mod * \mod_filter_freq.kr(0!chans)),
                 \lp_q.kr(0)
             );
 
-            //TODO: filter: bypass
-            var drive = lowpassed;
+            var drive = Select.ar(\filter_enable.kr(1!chans).asInteger, [filter, lowpassed]);
             var driven = XFade2.ar(drive,
                 Shaper.ar(tfBuf, drive), (\drive.kr(0.025)*2) - 1
             );
@@ -135,7 +134,6 @@ Grvl {
                 offsetReadPhase  + (mod * \mod_write_phase.kr(0!chans))
             ]);
 
-            //TODO: pm depth read write
             BufWr.ar(writeMixed[0], buf[0], writePhase[0]);
             BufWr.ar(writeMixed[1], buf[1], writePhase[1]);
 
