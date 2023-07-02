@@ -56,8 +56,6 @@ Grvl {
                 bufFrames * \end_minutes_read.kr((1/60)!chans)
             );
 
-            //TODO: read-only phasor, Select.kr to choose
-
             // var mod = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
             //var mod = inB * MouseY.kr(0, 200);
 
@@ -91,7 +89,6 @@ Grvl {
             var mu = steps.sqrt;
             // var mu = 255;
 
-            //TODO: shape & unshape bypass
             var comp = read;
             var comped = Compander.ar(comp, comp, //limiter/compression
                 thresh: 1,
