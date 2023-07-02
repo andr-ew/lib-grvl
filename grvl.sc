@@ -38,6 +38,11 @@ Grvl {
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
 
+            //TODO: mod sources: L, R, LFTri, LFSaw, LFPulse, GrayNoise
+            var mod = 0!chans;
+
+            var in = Select.ar(\adc_channel.kr([0, 1]).asInteger, [extIn[0], extIn[1]]);
+
             var buf = \loopBuf.kr(0!chans);
             var bufFrames = BufFrames.kr(buf);
             var rate_slew = \rate_slew.kr(0);
@@ -56,23 +61,6 @@ Grvl {
                 bufFrames * \end_minutes_read.kr((1/60)!chans)
             );
 
-            // var mod = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
-            //var mod = inB * MouseY.kr(0, 200);
-
-            //TODO: mod sources: L, R, LFTri, LFSaw, LFPulse, GrayNoise
-            var mod = 0!chans;
-
-            var in_amp_left = \in_amp_left.kr([1, 0]);
-            var in_amp_right = \in_amp_right.kr([0, 1]);
-            var in = Mix.ar(
-                extIn * [
-                    [in_amp_left[0], in_amp_right[0]],
-                    [in_amp_left[1], in_amp_right[1]]
-                ]
-            );
-
-            var loop = \loop.kr(1!chans);
-
             //TODO: pm depth read
             var readPhase = Select.ar(\couple_phases.kr(1!chans).asInteger, [
                 readOnlyPhase,
@@ -80,14 +68,8 @@ Grvl {
             ]);
             var read = BufRd.ar(
                 1, buf, readPhase + mod,
-                loop, \interp.kr(0!chans)
+                1, \interp.kr(0!chans)
             );
-
-            //TODO: filter: bypass
-            //TODO: lp/hp fm from mod depth
-            var steps = 2.pow(\bit_depth.kr(8!chans));
-            var mu = steps.sqrt;
-            // var mu = 255;
 
             var comp = read;
             var comped = Compander.ar(comp, comp, //limiter/compression
@@ -97,6 +79,9 @@ Grvl {
                 clampTime:  0.01,
                 relaxTime:  0.01
             );
+
+            var steps = 2.pow(\bit_depth.kr(8!chans));
+            var mu = steps.sqrt;
             var shape = comped;
             var shaped = shape.sign * log(1 + (mu * shape.abs)) / log(1 + mu);
             var round = shaped;
@@ -110,12 +95,15 @@ Grvl {
             var unshape = rounded;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
+            //TODO: lp/hp fm from mod depth
             var filter = unshaped;
             var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
             var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
 
-            var driven = XFade2.ar(lowpassed,
-                Shaper.ar(tfBuf, lowpassed), (\drive.kr(0.025)*2) - 1
+            //TODO: filter: bypass
+            var drive = lowpassed;
+            var driven = XFade2.ar(drive,
+                Shaper.ar(tfBuf, drive), (\drive.kr(0.025)*2) - 1
             );
 
             var out = driven;
@@ -136,8 +124,8 @@ Grvl {
             ]);
 
             //TODO: pm depth read write
-            BufWr.ar(writeMixed[0], buf[0], writePhase[0], loop[0]);
-            BufWr.ar(writeMixed[1], buf[1], writePhase[1], loop[1]);
+            BufWr.ar(writeMixed[0], buf[0], writePhase[0]);
+            BufWr.ar(writeMixed[1], buf[1], writePhase[1]);
 
             Out.ar(\outBus.kr(0), outMixed[0] + outMixed[1]);
         }).add;
