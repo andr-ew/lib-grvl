@@ -1,7 +1,3 @@
-paramsMenu.highlightColors.r = 255
-paramsMenu.highlightColors.g = 95
-paramsMenu.highlightColors.b = 31
-
 for chan = 1,2 do
     local actions = {}
 
