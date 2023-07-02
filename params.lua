@@ -86,6 +86,7 @@ for chan = 1,2 do
             crops.dirty.grid = true
         end
     }
+    --TODO: play toggles rate==0 instead of level==0
     params:add{
         type = 'binary', behavior = 'toggle',
         id = 'play_'..chan, name = 'play', default = 1,
@@ -184,6 +185,7 @@ for chan = 1,2 do
 
     local max_time = 7/4
 
+    --TODO: refactor to use volts, maybe 0-7
     params:add{
         type = 'control', id = 'loop_start_'..chan, name = 'loop start',
         controlspec = cs.def{ min = 0, max = max_time, default = 0 },
@@ -195,5 +197,55 @@ for chan = 1,2 do
         action = actions.rate_start_end,
     }
 
-    --TODO: smooth, interp
+    --TODO: interp
+
+    --TODO: test & adjust quants
+    params:add{
+        type = 'control', id = 'mod_osc_freq_'..chan, name = 'mod osc freq',
+        controlspec = cs.def{ min = 0, max = 17, default = 16 },
+        action = function(v)
+            local hz = (1/5) * 2^v
+            engine.mod_freq(chan, hz)
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
+    }
+    params:add{
+        type = 'control', id = 'mod_osc_depth_'..chan, name = 'mod osc depth',
+        controlspec = cs.def{ min = -5, max = 5, default = 1/10, units = 'v' },
+        action = function(v)
+            local depth = v * 10
+            engine.mod_depth(chan, depth)
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
+    }
+    params:add{
+        type = 'option', id = 'mod_osc_type_'..chan, name = 'mod osc type',
+        options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
+        action = function(v)
+            engine.mod_source(chan, v)
+
+            crops.dirty.screen = true
+        end
+    }
+    params:add{
+        type = 'option', id = 'mod_osc_dest_'..chan, name = 'mod osc dest',
+        options = { 'read phase', 'write phase', 'filter freq' }, default = 1,
+        action = function(v)
+            engine.mod_read_phase(chan, 0)
+            engine.mod_write_phase(chan, 0)
+            engine.mod_filter_freq(chan, 0)
+
+            if v==1 then
+                engine.mod_read_phase(chan, 1)
+            elseif v==2 then
+                engine.mod_write_phase(chan, 1)
+            elseif v==3 then
+                engine.mod_filter_freq(chan, 100)
+            end
+        end
+    }
 end
