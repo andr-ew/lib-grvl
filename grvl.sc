@@ -38,10 +38,18 @@ Grvl {
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
 
-            //TODO: mod sources: L, R, LFTri, LFSaw, LFPulse, GrayNoise
-            var mod = 0!chans;
+            var mod_freq = \mod_freq.kr(10000!chans);
+            var sin = SinOsc.ar(mod_freq);
+            var tri = LFTri.ar(mod_freq);
+            var saw = LFSaw.ar(mod_freq);
+            var pulse = LFPulse.ar(mod_freq);
+            var noise = GrayNoise.ar();
 
-            var in = Select.ar(\adc_channel.kr([0, 1]).asInteger, [extIn[0], extIn[1]]);
+            var mod = Select.ar(\mod_source.kr(3!chans).asInteger - 1, [
+                extIn[1], sin, tri, saw, pulse, noise
+            ]) * \mod_depth.kr(1!chans);
+
+            var in = Select.ar(\adc_channel.kr(0!chans).asInteger, [extIn[0], extIn[1]]);
 
             var buf = \loopBuf.kr(0!chans);
             var bufFrames = BufFrames.kr(buf);
@@ -67,7 +75,7 @@ Grvl {
                 readWritePhase,
             ]);
             var read = BufRd.ar(
-                1, buf, readPhase + mod,
+                1, buf, readPhase + (mod * \mod_read_phase.kr(1!chans)),
                 1, \interp.kr(0!chans)
             );
 
@@ -97,8 +105,12 @@ Grvl {
 
             //TODO: lp/hp fm from mod depth
             var filter = unshaped;
-            var highpassed = SVF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(0), 0, 0, 1);
-            var lowpassed = SVF.ar(highpassed, \lp_freq.kr(6000), \lp_rq.kr(0), 1);
+            var highpassed = RHPF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(1));
+            var lowpassed = MoogLadder.ar(
+                highpassed,
+                \lp_freq.kr(6000) + (mod * \mod_filter_freq.kr(0!chans)),
+                \lp_q.kr(0)
+            );
 
             //TODO: filter: bypass
             var drive = lowpassed;
@@ -120,7 +132,7 @@ Grvl {
             var offsetReadPhase = readWritePhase - (rate_write.sign * \head_offset.kr(2!chans));
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),
-                offsetReadPhase
+                offsetReadPhase  + (mod * \mod_write_phase.kr(0!chans))
             ]);
 
             //TODO: pm depth read write
