@@ -11,8 +11,12 @@ local function Channel()
 
     local _start = Grid.integer()
     local _end = Grid.integer()
-    local _reverse = Grid.toggle()
-    local _oct = Grid.integer()
+    local _reverse_write = Grid.toggle()
+    local _oct_write = Grid.integer()
+    local _reverse_read = Grid.toggle()
+    local _oct_read = Grid.integer()
+    local _couple1 = Grid.toggle()
+    local _couple2 = Grid.toggle()
 
     return function(props)
         local chan = props.channel
@@ -76,17 +80,39 @@ local function Channel()
                 end
             }
         }
-        _reverse{
+        _reverse_write{
             x = left and 1 or 9, y = 7,
             levels = { 4, 15 },
-            state = crops.of_param('reverse_'..chan),
+            state = crops.of_param('reverse_write_'..chan),
         }
-        _oct{
+        _oct_write{
             x = left and 2 or 10, y = 7,
             size = 6, min = -3,
-            state = crops.of_param('octave_'..chan),
+            state = crops.of_param('octave_write_'..chan),
         }
-
+        do
+            local head = (params:get('couple_'..chan) > 0) and 'write_' or 'read_'
+            _reverse_read{
+                x = left and 1 or 9, y = 8,
+                levels = { 4, 15 },
+                state = crops.of_param('reverse_'..head..chan),
+            }
+            _oct_read{
+                x = left and 2 or 10, y = 8,
+                size = 6, min = -3,
+                state = crops.of_param('octave_'..head..chan),
+            }
+        end
+        _couple1{
+            x = left and 8 or 16, y = 7,
+            levels = { 4, 15 },
+            state = crops.of_param('couple_'..chan),
+        }
+        _couple2{
+            x = left and 8 or 16, y = 8,
+            levels = { 4, 15 },
+            state = crops.of_param('couple_'..chan),
+        }
     end
 end
 

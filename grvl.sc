@@ -40,15 +40,22 @@ Grvl {
 
             var buf = \loopBuf.kr(0!chans);
             var bufFrames = BufFrames.kr(buf);
-
-            var rate = \rate.kr(1!chans, \rate_slew.kr(0));
+            var rate_slew = \rate_slew.kr(0);
+            var rate_write = \rate_write.kr(1!chans, rate_slew);
 
             var readWritePhase = Phasor.ar(
                 0,
-                BufRateScale.kr(buf) * rate,
-                bufFrames * \start_minutes.kr(0!chans),
-                bufFrames * \end_minutes.kr((1/60)!chans)
+                BufRateScale.kr(buf) * rate_write,
+                bufFrames * \start_minutes_write.kr(0!chans),
+                bufFrames * \end_minutes_write.kr((1/60)!chans)
             );
+            var readOnlyPhase = Phasor.ar(
+                0,
+                BufRateScale.kr(buf) * \rate_read.kr(1!chans, rate_slew),
+                bufFrames * \start_minutes_read.kr(0!chans),
+                bufFrames * \end_minutes_read.kr((1/60)!chans)
+            );
+
             //TODO: read-only phasor, Select.kr to choose
 
             // var mod = LFTri.ar(MouseX.kr(0, 40000), 0, MouseY.kr(0, 50));
@@ -69,8 +76,12 @@ Grvl {
             var loop = \loop.kr(1!chans);
 
             //TODO: pm depth read
+            var readPhase = Select.ar(\couple_phases.kr(1!chans).asInteger, [
+                readOnlyPhase,
+                readWritePhase,
+            ]);
             var read = BufRd.ar(
-                1, buf, readWritePhase + mod,
+                1, buf, readPhase + mod,
                 loop, \interp.kr(0!chans)
             );
 
@@ -121,7 +132,7 @@ Grvl {
             ];
 
             var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
-            var offsetReadPhase = readWritePhase - (rate.sign * \head_offset.kr(2!chans));
+            var offsetReadPhase = readWritePhase - (rate_write.sign * \head_offset.kr(2!chans));
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),
                 offsetReadPhase

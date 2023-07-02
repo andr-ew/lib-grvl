@@ -41,23 +41,37 @@ for chan = 1,2 do
         crops.dirty.grid = true
     end
 
-    --TODO: update separate rate_write & rate_read commands
+    --TODO: looper-recorded decoupled phases have decoupled start/end
     function actions.rate_start_end()
-        local rev = (params:get('reverse_'..chan)==0) and 1 or -1
-        local oct = params:get('octave_'..chan)
+        local rev_w = (params:get('reverse_write_'..chan)==0) and 1 or -1
+        local oct_w = params:get('octave_write_'..chan)
+        local r_w = 2^oct_w * rev_w
+        local rev_r = (params:get('reverse_read_'..chan)==0) and 1 or -1
+        local oct_r = params:get('octave_read_'..chan)
+        local r_r = 2^oct_r * rev_r
+
         --TODO: rate
         local st = params:get('loop_start_'..chan)
         local en = params:get('loop_end_'..chan)
-        local r = 2^oct * rev
+
+        engine.couple_phases(chan, params:get('couple_'..chan))
 
         if st < en then
-            engine.rate(chan, r)
-            engine.start_minutes(chan, st/60)
-            engine.end_minutes(chan, en/60)
+            engine.rate_write(chan, r_w)
+            engine.rate_read(chan, r_r)
+
+            engine.start_minutes_write(chan, st/60)
+            engine.end_minutes_write(chan, en/60)
+            engine.start_minutes_read(chan, st/60)
+            engine.end_minutes_read(chan, en/60)
         else
-            engine.rate(chan, -r)
-            engine.start_minutes(chan, en/60)
-            engine.end_minutes(chan, st/60)
+            engine.rate_write(chan, -r_w)
+            engine.rate_read(chan, -r_r)
+
+            engine.start_minutes_write(chan, en/60)
+            engine.end_minutes_write(chan, st/60)
+            engine.start_minutes_read(chan, en/60)
+            engine.end_minutes_read(chan, st/60)
         end
 
         crops.dirty.grid = true
@@ -98,17 +112,30 @@ for chan = 1,2 do
 
     params:add{
         type = 'binary', behavior = 'toggle',
-        id = 'reverse_'..chan, name = 'reverse',
+        id = 'reverse_write_'..chan, name = 'reverse (write)',
         action = actions.rate_start_end,
     }
-
-    --TODO: separate write & read params, couple param
-    --TODO: rate slew
     params:add{
-        type = 'number', id = 'octave_'..chan, name = 'octave',
+        type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
         min = -3, max = 2, default = 0,
         action = actions.rate_start_end
     }
+    params:add{
+        type = 'binary', behavior = 'toggle',
+        id = 'reverse_read_'..chan, name = 'reverse (read)',
+        action = actions.rate_start_end,
+    }
+    params:add{
+        type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
+        min = -3, max = 2, default = 0,
+        action = actions.rate_start_end
+    }
+    params:add{
+        type = 'binary', behavior = 'toggle',
+        id = 'couple_'..chan, name = 'read/write couple', default = 1,
+        action = actions.rate_start_end,
+    }
+    --TODO: rate slew
 
     params:add{
         type = 'control', id = 'bit_depth_'..chan, name = 'bit depth',
