@@ -150,7 +150,6 @@ Grvl {
             Out.kr(\readPhaseBus.kr(), readPhase);
         }).add;
 
-
         //add the rest of NamedControls to commands w/ callback
         def.allControlNames.do({ arg c;
             var name = c.name;
@@ -230,8 +229,7 @@ Grvl {
             format: \isff
         ));
 
-        //TODO: polls dict, add phase polls based phases sent out of dedicated busses
-
+        //add phase polls
         chans.do({ arg i;
             polls.put(("write_phase_" ++ (i+1) ++ "_minutes").asSymbol, (
                 func: { writePhaseBus.getnSynchronous(chans).at(i) / buffers[0].numFrames }
@@ -240,7 +238,6 @@ Grvl {
                 func: { readPhaseBus.getnSynchronous(chans).at(i) / buffers[0].numFrames }
             ));
         });
-
 
         buffers = Array.fill(chans, { Buffer.alloc(s, s.sampleRate * maxLoopTime) });
         writePhaseBus = Bus.control(s, 2);
@@ -260,5 +257,7 @@ Grvl {
     free {
         synth.free;
         buffers.do({ arg b; b.free; });
+        writePhaseBus.free;
+        readPhaseBus.free;
     }
 }
