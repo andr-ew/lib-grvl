@@ -7,8 +7,11 @@ Grvl {
     var <tfBuf;
     var <def;
     var <commands;
+    var <polls;
     var <synth;
     var <buffers;
+    var <writePhaseBus;
+    var <readPhaseBus;
 
     //settings for soundfile read/write
     var headerFormat = "WAV";
@@ -20,9 +23,10 @@ Grvl {
 
 	init {
         //NamedControls not to auto-make into commands
-        var notCommand = [\outBus, \loopBuf];
+        var notCommand = [\outBus, \loopBuf, \writePhaseBus, \readPhaseBus];
 
         commands = Dictionary.new();
+        polls = Dictionary.new();
 
         s = Server.default;
 
@@ -142,6 +146,8 @@ Grvl {
             BufWr.ar(writeMixed[1], buf[1], writePhase[1]);
 
             Out.ar(\outBus.kr(0), outMixed[0] + outMixed[1]);
+            Out.kr(\writePhaseBus.kr(), readWritePhase);
+            Out.kr(\readPhaseBus.kr(), readPhase);
         }).add;
 
 
@@ -226,10 +232,26 @@ Grvl {
 
         //TODO: polls dict, add phase polls based phases sent out of dedicated busses
 
-        buffers = Array.fill(2, { Buffer.alloc(s, s.sampleRate * maxLoopTime) });
+        chans.do({ arg i;
+            polls.put(("write_phase_" ++ (i+1) ++ "_minutes").asSymbol, (
+                func: { writePhaseBus.getnSynchronous(chans).at(i) / buffers[0].numFrames }
+            ));
+            polls.put(("read_phase_" ++ (i+1) ++ "_minutes").asSymbol, (
+                func: { readPhaseBus.getnSynchronous(chans).at(i) / buffers[0].numFrames }
+            ));
+        });
+
+
+        buffers = Array.fill(chans, { Buffer.alloc(s, s.sampleRate * maxLoopTime) });
+        writePhaseBus = Bus.control(s, 2);
+        readPhaseBus = Bus.control(s, 2);
 
         s.sync;
-        synth = Synth.new(\grvl, [\loopBuf, [buffers[0].bufnum, buffers[1].bufnum]]);
+        synth = Synth.new(\grvl, [
+            \loopBuf, [buffers[0].bufnum, buffers[1].bufnum],
+            \writePhaseBus, writePhaseBus,
+            \readPhaseBus, readPhaseBus,
+        ]);
         s.sync;
 
         postln("🪨 layin' gravel 🪨");
