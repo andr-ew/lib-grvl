@@ -10,6 +10,10 @@ Grvl {
     var <synth;
     var <buffers;
 
+    //settings for soundfile read/write
+    var headerFormat = "WAV";
+    var sampleFormat = "int32";
+
     *new {
 		^super.new.init;
 	}
@@ -177,7 +181,48 @@ Grvl {
             format: \i
         ));
 
-        //TODO: buffer read & write
+        //add buffer file write & read
+        commands.put(\write_buf, (
+            oscFunc: { arg msg;
+                var buf = buffers[msg[1] - 1];
+                var path = msg[2];
+                var startMinutes = msg[3];
+                var endMinutes = msg[4];
+                var bufFrames = buf.numFrames;
+
+                msg.postln;
+
+                buf.write(
+                    path,
+                    headerFormat,
+                    sampleFormat,
+                    numFrames: bufFrames * (endMinutes - startMinutes),
+                    startFrame: bufFrames * startMinutes
+                );
+            },
+            format: \isff
+        ));
+        commands.put(\read_buf, (
+            oscFunc: { arg msg;
+                var buf = buffers[msg[1] - 1];
+                var path = msg[2];
+                var startMinutes = msg[3];
+                var endMinutes = msg[4];
+                var bufFrames = buf.numFrames;
+
+                msg.postln;
+
+                buf.readChannel(
+                    path,
+                    fileStartFrame: 0,
+                    numFrames: bufFrames * (endMinutes - startMinutes),
+                    bufStartFrame: bufFrames * startMinutes,
+                    leaveOpen: false,
+                    channels: [0],
+                );
+            },
+            format: \isff
+        ));
 
         //TODO: polls dict, add phase polls based phases sent out of dedicated busses
 
