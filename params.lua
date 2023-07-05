@@ -165,7 +165,7 @@ for chan = 1,2 do
         type = 'control', id = 'output_pan_'..chan, name = 'output pan',
         controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
         action = function(v)
-            engine.output_pan_(chan, v/5)            
+            engine.out_pan(chan, v/5)
 
             crops.dirty.screen = true
             crops.dirty.arc = true
