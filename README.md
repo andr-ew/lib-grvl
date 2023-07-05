@@ -21,8 +21,6 @@ a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora)
 
 ## install
 
-(( not done yet don't install hehe ))
-
 ### norns
 
 in the maiden [REPL](https://monome.org/docs/norns/image/wifi_maiden-images/install-repl.png), type:
