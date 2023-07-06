@@ -244,7 +244,7 @@ for chan = 1,2 do
             elseif v==2 then
                 engine.mod_write_phase(chan, 1)
             elseif v==3 then
-                engine.mod_filter_freq(chan, 100)
+                engine.mod_filter_freq(chan, 225)
             end
         end
     }
