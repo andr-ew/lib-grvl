@@ -7,7 +7,7 @@ local function Channel()
     local _buffer = Grid.integer()
     
     local _bits = Grid.integer()
-    local _silt = Grid.integer()
+    local _detrius = Grid.integer()
 
     local _start = Grid.integer()
     local _end = Grid.integer()
@@ -63,13 +63,13 @@ local function Channel()
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
             state = grvl.of_param('bit_depth_'..chan),
         }
-        _silt{
+        _detrius{
             x = left and 6 or 11, y = 1, 
             size = 3, flow = 'down', min = -1,
             state = {
-                util.round(params:get('silt_'..chan)),
+                util.round(params:get('detrius_'..chan)),
                 function(v)
-                    params:set('silt_'..chan, v)
+                    params:set('detrius_'..chan, v)
                 end
             }
         }

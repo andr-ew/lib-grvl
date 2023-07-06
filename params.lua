@@ -250,7 +250,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'number', id = 'silt_'..chan, name = 'silt',
+        type = 'number', id = 'detrius_'..chan, name = 'detrius',
         min = -5, max = 2, default = 1,
         action = function(v) 
             engine.head_offset(chan, v) 
@@ -363,7 +363,7 @@ for chan = 1,2 do
 
     --TODO: test & adjust quants
     params:add{
-        type = 'control', id = 'mod_osc_freq_'..chan, name = 'mod osc freq',
+        type = 'control', id = 'silt_freq_'..chan, name = 'silt freq',
         controlspec = cs.def{ min = 0, max = 17, default = 16 },
         action = function(v)
             local hz = (1/5) * 2^v
@@ -374,7 +374,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'control', id = 'mod_osc_depth_'..chan, name = 'mod osc depth',
+        type = 'control', id = 'silt_depth_'..chan, name = 'silt depth',
         controlspec = cs.def{ min = -5, max = 5, default = 1/10, units = 'v' },
         action = function(v)
             local depth = v * 10
@@ -385,7 +385,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'option', id = 'mod_osc_type_'..chan, name = 'mod osc type',
+        type = 'option', id = 'silt_source_'..chan, name = 'silt source',
         options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
         action = function(v)
             engine.mod_source(chan, v)
@@ -394,7 +394,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'option', id = 'mod_osc_dest_'..chan, name = 'mod osc dest',
+        type = 'option', id = 'silt_dest_'..chan, name = 'silt dest',
         options = { 'read phase', 'write phase', 'filter freq', 'amplitude' }, default = 1,
         action = function(v)
             engine.mod_read_phase(chan, 0)
