@@ -163,7 +163,7 @@ for chan = 1,2 do
     }
     params:add{
         type = 'control', id = 'output_pan_'..chan, name = 'output pan',
-        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
+        controlspec = cs.def{ min = -5, max = 5, default = chan==1 and -4 or 4, units = 'v' },
         action = function(v)
             engine.out_pan(chan, v/5)
 
@@ -244,7 +244,7 @@ for chan = 1,2 do
             elseif v==2 then
                 engine.mod_write_phase(chan, 1)
             elseif v==3 then
-                engine.mod_filter_freq(chan, 100)
+                engine.mod_filter_freq(chan, 225)
             end
         end
     }
