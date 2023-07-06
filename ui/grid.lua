@@ -120,7 +120,13 @@ local function App()
     local _channels = {}
     for i = 1,2 do _channels[i] = Channel() end
 
+    local _focus_bg = Grid.fills()
+
     return function(props)
+        _focus_bg{
+            x = 7, y = 1, size = 16, wrap = 4, level = 4,
+        }
+
         _channels[1]{
             side = 'left', channel = 1,
         }
