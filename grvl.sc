@@ -46,7 +46,7 @@ Grvl {
         def = SynthDef.new(\grvl, {
             var extIn = SoundIn.ar([0,1]);
 
-            var mod_freq = \mod_freq.kr(10000!chans);
+            var mod_freq = \mod_freq.kr(10000!chans, \mod_freq_slew.kr(3));
             var sin = SinOsc.ar(mod_freq);
             var tri = LFTri.ar(mod_freq);
             var saw = LFSaw.ar(mod_freq);
