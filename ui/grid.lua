@@ -18,6 +18,8 @@ local function Channel()
     local _couple1 = Grid.toggle()
     local _couple2 = Grid.toggle()
 
+    local time_max = params:lookup_param('loop_end_1').controlspec.maxval
+
     return function(props)
         local chan = props.channel
         local left, right = props.side=='left', props.size=='right'
@@ -64,9 +66,9 @@ local function Channel()
             x = left and 1 or 9, y = 5,
             size = 8, min = 0,
             state = {
-                util.round(params:get('loop_start_'..chan) * 4),
+                util.round((params:get('loop_start_'..chan) / time_max) * 7),
                 function(v)
-                    params:set('loop_start_'..chan, v / 4)
+                    params:set('loop_start_'..chan, (v/7) * time_max)
                 end
             }
         }
@@ -74,9 +76,9 @@ local function Channel()
             x = left and 1 or 9, y = 6,
             size = 8, min = 0,
             state = {
-                util.round(params:get('loop_end_'..chan) * 4),
+                util.round((params:get('loop_end_'..chan) / time_max) * 7),
                 function(v)
-                    params:set('loop_end_'..chan, v / 4)
+                    params:set('loop_end_'..chan, (v/7) * time_max)
                 end
             }
         }
