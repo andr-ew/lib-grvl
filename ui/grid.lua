@@ -18,6 +18,11 @@ local function Channel()
     local _couple1 = Grid.toggle()
     local _couple2 = Grid.toggle()
 
+    local _patrecs = {}
+    for i = 1,5 do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
+
     local time_max = params:lookup_param('loop_end_1').controlspec.maxval
 
     return function(props)
@@ -27,12 +32,12 @@ local function Channel()
         _rec{
             x = left and 1 or 15, y = 1,
             levels = { 4, 15 },
-            state = crops.of_param('record_'..chan),
+            state = grvl.of_param('record_'..chan),
         }
         _play{
             x = left and 2 or 16, y = 1,
             levels = { 4, 15 },
-            state = crops.of_param('play_'..chan),
+            state = grvl.of_param('play_'..chan),
         }
         _clear{
             x = left and 1 or 16, y = 2,
@@ -43,13 +48,20 @@ local function Channel()
             x = left and 4 or 12, y = 1,
             size = 2,
             levels = { 0, 15 },
-            state = crops.of_param('buffer_'..chan),
+            state = grvl.of_param('buffer_'..chan),
         }
+
+        for i,_patrec in ipairs(_patrecs) do
+            _patrec{
+                x = (left and 0 or 12) + i, y = 3,
+                pattern = patterns[(left and 0 or 5) + i],
+            }
+        end
 
         _bits{
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
-            state = crops.of_param('bit_depth_'..chan),
+            state = grvl.of_param('bit_depth_'..chan),
         }
         _silt{
             x = left and 6 or 11, y = 1, 
@@ -85,35 +97,35 @@ local function Channel()
         _reverse_write{
             x = left and 1 or 9, y = 7,
             levels = { 4, 15 },
-            state = crops.of_param('reverse_write_'..chan),
+            state = grvl.of_param('reverse_write_'..chan),
         }
         _oct_write{
             x = left and 2 or 10, y = 7,
             size = 6, min = -3,
-            state = crops.of_param('octave_write_'..chan),
+            state = grvl.of_param('octave_write_'..chan),
         }
         do
             local head = (params:get('couple_'..chan) > 0) and 'write_' or 'read_'
             _reverse_read{
                 x = left and 1 or 9, y = 8,
                 levels = { 4, 15 },
-                state = crops.of_param('reverse_'..head..chan),
+                state = grvl.of_param('reverse_'..head..chan),
             }
             _oct_read{
                 x = left and 2 or 10, y = 8,
                 size = 6, min = -3,
-                state = crops.of_param('octave_'..head..chan),
+                state = grvl.of_param('octave_'..head..chan),
             }
         end
         _couple1{
             x = left and 8 or 16, y = 7,
             levels = { 4, 15 },
-            state = crops.of_param('couple_'..chan),
+            state = grvl.of_param('couple_'..chan),
         }
         _couple2{
             x = left and 8 or 16, y = 8,
             levels = { 4, 15 },
-            state = crops.of_param('couple_'..chan),
+            state = grvl.of_param('couple_'..chan),
         }
     end
 end
