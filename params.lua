@@ -1,34 +1,6 @@
 for chan = 1,2 do
     local actions = {}
 
-    -- function actions.record_feedback()
-    --     local rec = params:get('record_'..chan)
-    --     local fb = params:get('feedback_'..chan)/5
-
-    --     if rec>0 then
-    --         engine.rec_amp(chan, 1)
-    --         engine.feedback_amp(chan, fb)
-    --     else
-    --         engine.rec_amp(chan, 0)
-    --         engine.feedback_amp(chan, 1)
-    --     end
-
-    --     crops.dirty.grid = true
-    --     crops.dirty.screen = true
-    --     crops.dirty.arc = true
-    -- end
-
-    function actions.play_output_level()
-        local play = params:get('play_'..chan)
-        local out = params:get('output_level_'..chan)/5
-
-        engine.out_amp(chan, out * play)
-        
-        crops.dirty.grid = true
-        crops.dirty.screen = true
-        crops.dirty.arc = true
-    end
-
     function actions.clear()
         local buf = params:get('buffer_'..chan)
         
@@ -39,12 +11,13 @@ for chan = 1,2 do
 
     --TODO: looper-recorded decoupled phases have decoupled start/end
     function actions.rate_start_end()
+        local play = params:get('play_'..chan)
         local rev_w = (params:get('reverse_write_'..chan)==0) and 1 or -1
         local oct_w = params:get('octave_write_'..chan)
-        local r_w = 2^oct_w * rev_w
+        local r_w = 2^oct_w * rev_w * play
         local rev_r = (params:get('reverse_read_'..chan)==0) and 1 or -1
         local oct_r = params:get('octave_read_'..chan)
-        local r_r = 2^oct_r * rev_r
+        local r_r = 2^oct_r * rev_r * play
 
         --TODO: rate
         local st = params:get('loop_start_'..chan)
@@ -86,11 +59,10 @@ for chan = 1,2 do
             crops.dirty.grid = true
         end
     }
-    --TODO: play toggles rate==0 instead of level==0
     params:add{
         type = 'binary', behavior = 'toggle',
         id = 'play_'..chan, name = 'play', default = 1,
-        action = actions.play_output_level,
+        action = actions.rate_start_end
     }
     params:add{
         type = 'binary', behavior = 'trigger',
@@ -156,10 +128,29 @@ for chan = 1,2 do
     --TODO: bitnoise?
     --TODO: drive
 
+    local function ampdb(amp) return math.log10(amp) * 20.0 end
+    local function dbamp(db) return math.pow(10.0, db*0.05) end
+    local function volt_amp(volt)
+        local minval = -math.huge
+        local maxval = 0
+        local range = dbamp(maxval) - dbamp(minval)
+
+        local scaled = volt/4
+        local db = ampdb(scaled * scaled * range + dbamp(minval))
+        local amp = dbamp(db)
+
+        return amp
+    end
+
     params:add{
         type = 'control', id = 'output_level_'..chan, name = 'output level',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
-        action = actions.play_output_level
+        action = function(v)
+            engine.out_amp(chan, volt_amp(v))
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
     }
     params:add{
         type = 'control', id = 'output_pan_'..chan, name = 'output pan',
