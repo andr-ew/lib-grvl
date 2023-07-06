@@ -233,11 +233,12 @@ for chan = 1,2 do
     }
     params:add{
         type = 'option', id = 'mod_osc_dest_'..chan, name = 'mod osc dest',
-        options = { 'read phase', 'write phase', 'filter freq' }, default = 1,
+        options = { 'read phase', 'write phase', 'filter freq', 'amplitude' }, default = 1,
         action = function(v)
             engine.mod_read_phase(chan, 0)
             engine.mod_write_phase(chan, 0)
             engine.mod_filter_freq(chan, 0)
+            engine.mod_out_amp(chan, 0)
 
             if v==1 then
                 engine.mod_read_phase(chan, 1)
@@ -245,6 +246,8 @@ for chan = 1,2 do
                 engine.mod_write_phase(chan, 1)
             elseif v==3 then
                 engine.mod_filter_freq(chan, 225)
+            elseif v==4 then
+                engine.mod_out_amp(chan, 1)
             end
         end
     }
