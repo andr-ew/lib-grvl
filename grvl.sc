@@ -128,7 +128,7 @@ Grvl {
             var out = driven;
             var write = driven;
 
-            var out_amp = \out_amp.kr(1!chans);
+            var out_amp = \out_amp.kr(1!chans) + (mod * \mod_out_amp.kr(0!chans));
             var out_pan = \out_pan.kr([-1, 1]);
             var outMixed = [
                 Pan2.ar(out[0] * out_amp[0], out_pan[0]),
