@@ -242,7 +242,7 @@ for chan = 1,2 do
 
     params:add{
         type = 'control', id = 'bit_depth_'..chan, name = 'bit depth',
-        controlspec = cs.def{ min = 4, max = 9, default = 9 },
+        controlspec = cs.def{ min = 4, max = 9, default = 9, units = 'v/bit' },
         action = function(v) 
             engine.bit_depth(chan, v) 
 
@@ -278,7 +278,7 @@ for chan = 1,2 do
 
     params:add{
         type = 'control', id = 'output_level_'..chan, name = 'output level',
-        controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
+        controlspec = cs.def{ min = 0, max = 10, default = 4, units = 'v' },
         action = function(v)
             engine.out_amp(chan, volt_amp(v))
             
@@ -318,6 +318,45 @@ for chan = 1,2 do
         type = 'control', id = 'loop_end_'..chan, name = 'loop end',
         controlspec = cs.def{ min = 0, max = time_volt_scale, default = 0, untis = 'v' },
         action = actions.rate_start_end,
+    }
+
+    local function volt_cutoff(volt)
+        return util.linexp(0, 7, 20, 20000, volt)
+    end
+    -- local function cutoff_volt(cut)
+    --     return util.explin(20, 20000, 0, 7, cut)
+    -- end
+    local function volt_q(volt, inverse)
+        return util.linexp(0, 1, 0.01, 1.5, (inverse and (5 - volt) or volt) / 5)
+    end
+
+    params:add{
+        type = 'control', id = 'lowpass_freq_'..chan, name = 'lowpass freq',
+        controlspec = cs.def{ min = 0, max = 7, default = 7, units = 'v' },
+        action = function(v)
+            engine.lp_freq(chan, volt_cutoff(v))
+        end
+    } 
+    params:add{
+        type = 'control', id = 'lowpass_q_'..chan, name = 'lowpass q',
+        controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
+        action = function(v)
+            engine.lp_q(chan, volt_q(v))
+        end
+    }
+    params:add{
+        type = 'control', id = 'highpass_freq_'..chan, name = 'highpass freq',
+        controlspec = cs.def{ min = 0, max = 7, default = 0, units = 'v' },
+        action = function(v)
+            engine.hp_freq(chan, volt_cutoff(v))
+        end
+    } 
+    params:add{
+        type = 'control', id = 'highpass_q_'..chan, name = 'highpass q',
+        controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
+        action = function(v)
+            engine.hp_rq(chan, volt_q(v, true))
+        end
     }
 
     --TODO: interp
