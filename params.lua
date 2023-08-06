@@ -253,7 +253,6 @@ for chan = 1,2 do
         type = 'number', id = 'detrius_'..chan, name = 'detrius',
         min = 1, max = 6, default = 1,
         action = function(v) 
-            engine.enable_read_gap(chan, v>1 and 1 or 0)
             engine.read_gap(chan, v) 
 
             crops.dirty.grid = true
