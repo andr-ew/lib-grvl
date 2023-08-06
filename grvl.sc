@@ -120,6 +120,7 @@ Grvl {
                 ) * x
             ) + y1;
 
+            //TODO: add interpolate bypass, use this when read_gap == 0
             var comp = interpolated;
             var comped = Compander.ar(comp, comp, //limiter/compression
                 thresh: 1,
