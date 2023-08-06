@@ -377,7 +377,7 @@ for chan = 1,2 do
     }
     params:add{
         type = 'control', id = 'silt_depth_'..chan, name = 'silt depth',
-        controlspec = cs.def{ min = -5, max = 5, default = 1/10, units = 'v' },
+        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
         action = function(v)
             local depth = v * 10
             engine.mod_depth(chan, depth)

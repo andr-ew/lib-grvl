@@ -149,11 +149,11 @@ Grvl {
             var readWetDry = XFade2.ar(readDry, readWet, (\wet_dry.kr(0.5)*2) - 1);
 
             var filter = readWetDry;
-            var highpassed = RHPF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(1));
+            var highpassed = RHPF.ar(filter, \hp_freq.kr(100!chans), \hp_rq.kr(1!chans));
             var lowpassed = MoogLadder.ar(
                 highpassed,
-                \lp_freq.kr(10000) + (mod * \mod_filter_freq.kr(0!chans)),
-                \lp_q.kr(0)
+                \lp_freq.kr(10000!chans) + (mod * \mod_filter_freq.kr(0!chans)),
+                \lp_q.kr(0!chans)
             );
 
             var drive = Select.ar(\filter_enable.kr(1!chans).asInteger, [filter, lowpassed]);
