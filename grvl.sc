@@ -84,19 +84,24 @@ Grvl {
                 readWritePhase,
             ]);
 
+
             var readGap = \read_gap.kr(1!chans).round;
 
-            var modulatedReadPhase = readPhase + (mod * \mod_read_phase.kr(1!chans));
+            var modulatedReadPhase = readPhase + (mod * \mod_read_phase.kr(0!chans));
 
-            var index = modulatedReadPhase - ((modulatedReadPhase % readGap.abs));
+            var index = modulatedReadPhase - (modulatedReadPhase % readGap);
 
             var phase3 = index;
-            //messing with the gap between interpolated phases is what gives the glitchy effect
+            //messing with the phasses is what gives the glitchy effect
             var phase2 = phase3 - (1 * readGap);
             var phase1 = phase3 - (2 * readGap);
             var phase0 = phase3 - (3 * readGap);
 
-            var y0 = BufRd.ar(1, buf, phase0, 1, 1);
+            var y0 = BufRd.ar(
+                1, buf,
+                Select.ar(\enable_read_gap.kr(0!chans).asInteger, [modulatedReadPhase, phase0]),
+                1, 1
+            );
             var y1 = BufRd.ar(1, buf, phase1, 1, 1);
             var y2 = BufRd.ar(1, buf, phase2, 1, 1);
             var y3 = BufRd.ar(1, buf, phase3, 1, 1);
@@ -120,8 +125,11 @@ Grvl {
                 ) * x
             ) + y1;
 
+            var scale = interpolated.tanh;
+            var scaled = (scale + (scale * LinExp.kr(readGap, 1/1000, 10.5, 1, 1/1000))) * 0.5;
+
             //TODO: add interpolate bypass, use this when read_gap == 0
-            var comp = interpolated;
+            var comp = Select.ar(\enable_read_gap.kr(0!chans).asInteger, [y0, scaled]);
             var comped = Compander.ar(comp, comp, //limiter/compression
                 thresh: 1,
                 slopeBelow: 1,
@@ -145,8 +153,8 @@ Grvl {
             var unshape = rounded;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
-            var readWet = unshaped;
             var readDry = BufRd.ar(1, buf, readPhase);
+            var readWet = unshaped;
             var readWetDry = XFade2.ar(readDry, readWet, (\wet_dry.kr(0.5)*2) - 1);
 
             var filter = readWetDry;
@@ -173,7 +181,9 @@ Grvl {
             ];
 
             var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
-            var offsetReadPhase = readWritePhase - (rate_write.sign * 5);
+            var offsetReadPhase = readWritePhase - (
+                rate_write.sign * ((4 * readGap) + \mod_read_phase.kr(0!chans).abs)
+            );
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),
                 offsetReadPhase  + (mod * \mod_write_phase.kr(0!chans))
