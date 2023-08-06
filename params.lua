@@ -251,9 +251,9 @@ for chan = 1,2 do
     }
     params:add{
         type = 'number', id = 'detrius_'..chan, name = 'detrius',
-        min = -5, max = 2, default = 1,
+        min = 1, max = 6, default = 1,
         action = function(v) 
-            engine.head_offset(chan, v) 
+            engine.read_gap(chan, v) 
 
             crops.dirty.grid = true
         end
@@ -262,8 +262,10 @@ for chan = 1,2 do
     --TODO: bitnoise?
     --TODO: drive
 
-    local function ampdb(amp) return math.log10(amp) * 20.0 end
-    local function dbamp(db) return math.pow(10.0, db*0.05) end
+    --TODO: might need to use math.log10(amp) on norns
+    local function ampdb(amp) return math.log(amp, 10) * 20.0 end
+
+    local function dbamp(db) return 10.0^(db*0.05) end
     local function volt_amp(volt)
         local minval = -math.huge
         local maxval = 0

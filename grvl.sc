@@ -83,12 +83,44 @@ Grvl {
                 readOnlyPhase,
                 readWritePhase,
             ]);
-            var read = BufRd.ar(
-                1, buf, readPhase + (mod * \mod_read_phase.kr(1!chans)),
-                1, \interp.kr(0!chans)
-            );
 
-            var comp = read;
+            var readGap = \read_gap.kr(1!chans).round;
+
+            var modulatedReadPhase = readPhase + (mod * \mod_read_phase.kr(1!chans));
+
+            var index = modulatedReadPhase - ((modulatedReadPhase % readGap.abs));
+
+            var phase3 = index;
+            //messing with the gap between interpolated phases is what gives the glitchy effect
+            var phase2 = phase3 - (1 * readGap);
+            var phase1 = phase3 - (2 * readGap);
+            var phase0 = phase3 - (3 * readGap);
+
+            var y0 = BufRd.ar(1, buf, phase0, 1, 1);
+            var y1 = BufRd.ar(1, buf, phase1, 1, 1);
+            var y2 = BufRd.ar(1, buf, phase2, 1, 1);
+            var y3 = BufRd.ar(1, buf, phase3, 1, 1);
+
+            var x = modulatedReadPhase - index;
+
+            //hermite interpolation function
+            var interpolated = (
+                (
+                    (
+                        (
+                            (
+                                ((0.5 * (y3 - y0)) + (1.5 * (y1 - y2))) * x
+                            ) + (
+                                y0 - (2.5 * y1) + (2 * y2) - (0.5 * y3)
+                            )
+                        ) * x
+                    ) + (
+                        0.5 * (y2 - y0)
+                    )
+                ) * x
+            ) + y1;
+
+            var comp = interpolated;
             var comped = Compander.ar(comp, comp, //limiter/compression
                 thresh: 1,
                 slopeBelow: 1,
@@ -112,7 +144,11 @@ Grvl {
             var unshape = rounded;
             var unshaped = unshape.sign / mu * ((1+mu)**(unshape.abs) - 1);
 
-            var filter = unshaped;
+            var readWet = unshaped;
+            var readDry = BufRd.ar(1, buf, readPhase);
+            var readWetDry = XFade2.ar(readDry, readWet, (\wet_dry.kr(0.5)*2) - 1);
+
+            var filter = readWetDry;
             var highpassed = RHPF.ar(filter, \hp_freq.kr(100), \hp_rq.kr(1));
             var lowpassed = MoogLadder.ar(
                 highpassed,
@@ -126,7 +162,7 @@ Grvl {
             );
 
             var out = driven;
-            var write = driven;
+            var write = Select.ar(\feedback_path.kr(0!chans).asInteger, [readDry, driven]);
 
             var out_amp = \out_amp.kr(1!chans) + (mod * \mod_out_amp.kr(0!chans));
             var out_pan = \out_pan.kr([-1, 1]);
@@ -136,7 +172,7 @@ Grvl {
             ];
 
             var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
-            var offsetReadPhase = readWritePhase - (rate_write.sign * \head_offset.kr(2!chans));
+            var offsetReadPhase = readWritePhase - (rate_write.sign * 5);
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),
                 offsetReadPhase  + (mod * \mod_write_phase.kr(0!chans))
