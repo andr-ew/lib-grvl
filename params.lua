@@ -258,6 +258,16 @@ for chan = 1,2 do
             crops.dirty.grid = true
         end
     }
+    params:add{
+        type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
+        controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
+        action = function(v)
+            engine.wet_dry(chan, v/5)
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
+    }
     
     --TODO: bitnoise?
     --TODO: drive
