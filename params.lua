@@ -251,19 +251,31 @@ for chan = 1,2 do
     }
     params:add{
         type = 'number', id = 'detrius_'..chan, name = 'detrius',
-        min = -5, max = 2, default = 1,
+        min = 1, max = 6, default = 1,
         action = function(v) 
-            engine.head_offset(chan, v) 
+            engine.read_gap(chan, v) 
 
             crops.dirty.grid = true
+        end
+    }
+    params:add{
+        type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
+        controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
+        action = function(v)
+            engine.wet_dry(chan, v/5)
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     
     --TODO: bitnoise?
     --TODO: drive
 
-    local function ampdb(amp) return math.log10(amp) * 20.0 end
-    local function dbamp(db) return math.pow(10.0, db*0.05) end
+    --TODO: might need to use math.log10(amp) on norns
+    local function ampdb(amp) return math.log(amp, 10) * 20.0 end
+
+    local function dbamp(db) return 10.0^(db*0.05) end
     local function volt_amp(volt)
         local minval = -math.huge
         local maxval = 0
@@ -375,7 +387,7 @@ for chan = 1,2 do
     }
     params:add{
         type = 'control', id = 'silt_depth_'..chan, name = 'silt depth',
-        controlspec = cs.def{ min = -5, max = 5, default = 1/10, units = 'v' },
+        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
         action = function(v)
             local depth = v * 10
             engine.mod_depth(chan, depth)

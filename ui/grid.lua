@@ -19,7 +19,7 @@ local function Channel()
     local _couple2 = Grid.toggle()
 
     local _patrecs = {}
-    for i = 1,5 do
+    for i = 1,4 do
         _patrecs[i] = Produce.grid.pattern_recorder()
     end
 
@@ -45,7 +45,7 @@ local function Channel()
             input = function() params:delta('clear_'..chan) end,
         }
         _buffer{
-            x = left and 4 or 12, y = 1,
+            x = left and 3 or 13, y = 1,
             size = 2,
             levels = { 0, 15 },
             state = grvl.of_param('buffer_'..chan),
@@ -53,7 +53,7 @@ local function Channel()
 
         for i,_patrec in ipairs(_patrecs) do
             _patrec{
-                x = (left and 0 or 12) + i, y = 3,
+                x = (left and 5 or 11) + (i-1)%2, y = 1 + (i-1)//2,
                 pattern = patterns[(left and 0 or 5) + i],
             }
         end
@@ -61,11 +61,15 @@ local function Channel()
         _bits{
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
-            state = grvl.of_param('bit_depth_'..chan),
+            state = {
+                util.round(params:get('bit_depth_'..chan)),
+                function(v)
+                    params:set('bit_depth_'..chan, v)
+                end
+            }
         }
         _detrius{
-            x = left and 6 or 11, y = 1, 
-            size = 3, flow = 'down', min = -1,
+            x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
             state = {
                 util.round(params:get('detrius_'..chan)),
                 function(v)
@@ -143,7 +147,7 @@ local function App()
         }
         for chan,_bg in ipairs(_grid_focus_bgs) do
             _bg{
-                x = chan == 1 and 4 or 12, y = 2, size = 2, level = 4,
+                x = chan == 1 and 3 or 13, y = 2, size = 2, level = 4,
             }
         end
 
