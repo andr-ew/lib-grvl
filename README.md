@@ -1,6 +1,6 @@
 # grvl
 
-dual data pavement for grid + norns/seamstress. no de-clicking, no interpolation, variable sample rate & bit depth.
+dual data pavement.
 
 a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora).
 
