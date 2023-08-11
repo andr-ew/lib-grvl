@@ -1,6 +1,6 @@
 # grvl
 
-dual data pavement for grid + norns/seamstress. no de-clicking, no interpolation, variable sample rate & bit depth.
+dual data pavement.
 
 a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora).
 
@@ -39,12 +39,12 @@ see [grvl-seamstress](https://github.com/andr-ew/grvl-seamstress)
 
 ## arc
 
-| ch 1    | ch 1    | ch 2    | ch 2    |
-| ------- | ------- | ------- | ------- |
-| lvl     | fb      | lvl     | fb      |
-| pm frq  | pm depth| pm frq  | pm depth|
-| start   | end     | start   | end     |
-| end     | rate    | end     | rate    |
+| ch 1   | ch 1     | ch 2   | ch 2     |
+| ------ | -------- | ------ | -------- |
+| lvl    | fb       | lvl    | fb       |
+| pm frq | pm depth | pm frq | pm depth |
+| start  | end      | start  | end      |
+| end    | rate     | end    | rate     |
 
 horizontal & vertical orientation via arc focus component, hold two keys to flip
 
@@ -58,4 +58,3 @@ horizontal & vertical orientation via arc focus component, hold two keys to flip
   - end, rate
 - K2-K3 (hold) + other UI element: assign mod src 1/2
 - K1 (hold) + K2-K3: assign mod sources
-
