@@ -250,7 +250,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'number', id = 'detrius_'..chan, name = 'detrius',
+        type = 'number', id = 'detritus_'..chan, name = 'detritus',
         min = 1, max = 6, default = 1,
         action = function(v) 
             engine.read_gap(chan, v) 

@@ -7,7 +7,7 @@ local function Channel()
     local _buffer = Grid.integer()
     
     local _bits = Grid.integer()
-    local _detrius = Grid.integer()
+    local _detritus = Grid.integer()
 
     local _start = Grid.integer()
     local _end = Grid.integer()
@@ -54,7 +54,7 @@ local function Channel()
         for i,_patrec in ipairs(_patrecs) do
             _patrec{
                 x = (left and 5 or 11) + (i-1)%2, y = 1 + (i-1)//2,
-                pattern = patterns[(left and 0 or 5) + i],
+                pattern = patterns[(left and 0 or 4) + i],
             }
         end
 
@@ -63,18 +63,14 @@ local function Channel()
             min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
             state = {
                 util.round(params:get('bit_depth_'..chan)),
-                function(v)
-                    params:set('bit_depth_'..chan, v)
-                end
+                set_param, 'bit_depth_'..chan
             }
         }
-        _detrius{
+        _detritus{
             x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
             state = {
-                util.round(params:get('detrius_'..chan)),
-                function(v)
-                    params:set('detrius_'..chan, v)
-                end
+                util.round(params:get('detritus_'..chan)),
+                set_param, 'detritus_'..chan
             }
         }
 
@@ -84,7 +80,7 @@ local function Channel()
             state = {
                 util.round((params:get('loop_start_'..chan) / time_max) * 7),
                 function(v)
-                    params:set('loop_start_'..chan, (v/7) * time_max)
+                    set_param('loop_start_'..chan, (v/7) * time_max)
                 end
             }
         }
@@ -94,7 +90,7 @@ local function Channel()
             state = {
                 util.round((params:get('loop_end_'..chan) / time_max) * 7),
                 function(v)
-                    params:set('loop_end_'..chan, (v/7) * time_max)
+                    set_param('loop_end_'..chan, (v/7) * time_max)
                 end
             }
         }
