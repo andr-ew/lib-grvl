@@ -60,7 +60,7 @@ local function Channel()
 
         _bits{
             x = left and 1 or 11, y = 4, size = 6, 
-            min = params:lookup_param('bit_depth_'..chan).controlspec.minval,
+            min = params:lookup_param('bit_depth_'..chan).min,
             state = {
                 util.round(params:get('bit_depth_'..chan)),
                 set_param, 'bit_depth_'..chan

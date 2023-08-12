@@ -3,6 +3,7 @@ local manual_seconds = 7/4
 local max_seconds = 55
 local silent = true
 
+--add track params
 for chan = 1,2 do
     local actions = {}
 
@@ -241,8 +242,8 @@ for chan = 1,2 do
     --TODO: rate slew
 
     params:add{
-        type = 'control', id = 'bit_depth_'..chan, name = 'bit depth',
-        controlspec = cs.def{ min = 4, max = 9, default = 9, units = 'v/bit' },
+        type = 'number', id = 'bit_depth_'..chan, name = 'bit depth',
+        min = 4, max = 9, default = 9,
         action = function(v) 
             engine.bit_depth(chan, v) 
 
@@ -328,7 +329,7 @@ for chan = 1,2 do
     }
     params:add{
         type = 'control', id = 'loop_end_'..chan, name = 'loop end',
-        controlspec = cs.def{ min = 0, max = time_volt_scale, default = 0, untis = 'v' },
+        controlspec = cs.def{ min = 0, max = time_volt_scale, default = 0, units = 'v' },
         action = actions.rate_start_end,
     }
 
@@ -425,4 +426,23 @@ for chan = 1,2 do
             end
         end
     }
+end
+
+--add destination params
+do
+    local function action(dest, v)
+        mod_src.crow.update()
+
+        crops.dirty.grid = true
+        crops.dirty.screen = true
+        crops.dirty.arc = true
+    end
+
+    patcher.add_assginment_params(action)
+end
+
+--add LFO params
+for i = 1,2 do
+    params:add_separator('lfo '..i)
+    mod_src.lfos[i]:add_params('lfo_'..i)
 end
