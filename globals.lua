@@ -8,6 +8,8 @@ for i = 1,8 do
     patterns[i].process = process_param 
 end
 
+grvl.active_src = 'none'
+
 set_param = function(id, v)
     local t = { id, v }
     process_param(t)

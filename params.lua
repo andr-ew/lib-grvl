@@ -459,23 +459,3 @@ for chan = 1,2 do
     }
 end
 
---add LFO params
-for i = 1,2 do
-    params:add_separator('lfo '..i)
-    mod_src.lfos[i]:add_params('lfo_'..i)
-end
-
---add destination params
-do
-    local function action(dest, v)
-        mod_src.crow.update()
-
-        crops.dirty.grid = true
-        crops.dirty.screen = true
-        crops.dirty.arc = true
-    end
-
-    params:add_separator('mod sources')
-
-    patcher.add_assginment_params(action)
-end
