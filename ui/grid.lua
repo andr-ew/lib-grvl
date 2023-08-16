@@ -32,7 +32,7 @@ local function Channel()
         _rec{
             x = left and 1 or 15, y = 1,
             levels = { 4, 15 },
-            state = grvl.of_param('record_'..chan),
+            state = grvl.of_param('record_'..chan, true),
         }
         _play{
             x = left and 2 or 16, y = 1,
@@ -62,14 +62,14 @@ local function Channel()
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).min,
             state = {
-                util.round(params:get('bit_depth_'..chan)),
+                util.round(patcher.get_destination_plus_param('bit_depth_'..chan)),
                 set_param, 'bit_depth_'..chan
             }
         }
         _detritus{
             x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
             state = {
-                util.round(params:get('detritus_'..chan)),
+                util.round(patcher.get_destination_plus_param('detritus_'..chan)),
                 set_param, 'detritus_'..chan
             }
         }
@@ -78,7 +78,9 @@ local function Channel()
             x = left and 1 or 9, y = 5,
             size = 8, min = 0,
             state = {
-                util.round((params:get('loop_start_'..chan) / time_max) * 7),
+                util.round(
+                    (patcher.get_destination_plus_param('loop_start_'..chan) / time_max) * 7
+                ),
                 function(v)
                     set_param('loop_start_'..chan, (v/7) * time_max)
                 end
@@ -88,7 +90,9 @@ local function Channel()
             x = left and 1 or 9, y = 6,
             size = 8, min = 0,
             state = {
-                util.round((params:get('loop_end_'..chan) / time_max) * 7),
+                util.round(
+                    (patcher.get_destination_plus_param('loop_end_'..chan) / time_max) * 7
+                ),
                 function(v)
                     set_param('loop_end_'..chan, (v/7) * time_max)
                 end
@@ -105,7 +109,9 @@ local function Channel()
             state = grvl.of_param('octave_write_'..chan),
         }
         do
-            local head = (params:get('couple_'..chan) > 0) and 'write_' or 'read_'
+            local head = (
+                patcher.get_destination_plus_param('couple_'..chan) > 0
+            ) and 'write_' or 'read_'
             _reverse_read{
                 x = left and 1 or 9, y = 8,
                 levels = { 4, 15 },
