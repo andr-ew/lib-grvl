@@ -1,22 +1,22 @@
 local App = {}
 
 local function Channel()
-    local _rec = Grid.toggle()
-    local _play = Grid.toggle()
+    local _rec = Patcher.grid.destination(Grid.toggle())
+    local _play = Patcher.grid.destination(Grid.toggle())
     local _clear = Grid.trigger()
-    local _buffer = Grid.integer()
+    local _buffer = Patcher.grid.destination(Grid.integer())
     
-    local _bits = Grid.integer()
-    local _detritus = Grid.integer()
+    local _bits = Patcher.grid.destination(Grid.integer())
+    local _detritus = Patcher.grid.destination(Grid.integer())
 
-    local _start = Grid.integer()
-    local _end = Grid.integer()
-    local _reverse_write = Grid.toggle()
-    local _oct_write = Grid.integer()
-    local _reverse_read = Grid.toggle()
-    local _oct_read = Grid.integer()
-    local _couple1 = Grid.toggle()
-    local _couple2 = Grid.toggle()
+    local _start = Patcher.grid.destination(Grid.integer())
+    local _end = Patcher.grid.destination(Grid.integer())
+    local _reverse_write = Patcher.grid.destination(Grid.toggle())
+    local _oct_write = Patcher.grid.destination(Grid.integer())
+    local _reverse_read = Patcher.grid.destination(Grid.toggle())
+    local _oct_read = Patcher.grid.destination(Grid.integer())
+    local _couple1 = Patcher.grid.destination(Grid.toggle())
+    local _couple2 = Patcher.grid.destination(Grid.toggle())
 
     local _patrecs = {}
     for i = 1,4 do
@@ -29,27 +29,27 @@ local function Channel()
         local chan = props.channel
         local left, right = props.side=='left', props.size=='right'
 
-        _rec{
+        _rec('record_'..chan, grvl.active_src, {
             x = left and 1 or 15, y = 1,
             levels = { 4, 15 },
             state = grvl.of_param('record_'..chan, true),
-        }
-        _play{
+        })
+        _play('play_'..chan, grvl.active_src, {
             x = left and 2 or 16, y = 1,
             levels = { 4, 15 },
             state = grvl.of_param('play_'..chan),
-        }
+        })
         _clear{
             x = left and 1 or 16, y = 2,
             levels = { 4, 15 },
             input = function() params:delta('clear_'..chan) end,
         }
-        _buffer{
+        _buffer('buffer_'..chan, grvl.active_src, {
             x = left and 3 or 13, y = 1,
             size = 2,
             levels = { 0, 15 },
             state = grvl.of_param('buffer_'..chan),
-        }
+        })
 
         for i,_patrec in ipairs(_patrecs) do
             _patrec{
@@ -58,23 +58,23 @@ local function Channel()
             }
         end
 
-        _bits{
+        _bits('bit_depth_'..chan, grvl.active_src, {
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).min,
             state = {
                 util.round(patcher.get_destination_plus_param('bit_depth_'..chan)),
                 set_param, 'bit_depth_'..chan
             }
-        }
-        _detritus{
+        })
+        _detritus('detritus_'..chan, grvl.active_src, {
             x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
             state = {
                 util.round(patcher.get_destination_plus_param('detritus_'..chan)),
                 set_param, 'detritus_'..chan
             }
-        }
+        })
 
-        _start{
+        _start('loop_start_'..chan, grvl.active_src, {
             x = left and 1 or 9, y = 5,
             size = 8, min = 0,
             state = {
@@ -85,8 +85,8 @@ local function Channel()
                     set_param('loop_start_'..chan, (v/7) * time_max)
                 end
             }
-        }
-        _end{
+        })
+        _end('loop_end_'..chan, grvl.active_src, {
             x = left and 1 or 9, y = 6,
             size = 8, min = 0,
             state = {
@@ -97,42 +97,42 @@ local function Channel()
                     set_param('loop_end_'..chan, (v/7) * time_max)
                 end
             }
-        }
-        _reverse_write{
+        })
+        _reverse_write('reverse_write_'..chan, grvl.active_src, {
             x = left and 1 or 9, y = 7,
             levels = { 4, 15 },
             state = grvl.of_param('reverse_write_'..chan),
-        }
-        _oct_write{
+        })
+        _oct_write('octave_write_'..chan, grvl.active_src, {
             x = left and 2 or 10, y = 7,
             size = 6, min = -3,
             state = grvl.of_param('octave_write_'..chan),
-        }
+        })
         do
             local head = (
                 patcher.get_destination_plus_param('couple_'..chan) > 0
             ) and 'write_' or 'read_'
-            _reverse_read{
+            _reverse_read('reverse_'..head..chan, grvl.active_src, {
                 x = left and 1 or 9, y = 8,
                 levels = { 4, 15 },
                 state = grvl.of_param('reverse_'..head..chan),
-            }
-            _oct_read{
+            })
+            _oct_read('octave_'..head..chan, grvl.active_src, {
                 x = left and 2 or 10, y = 8,
                 size = 6, min = -3,
                 state = grvl.of_param('octave_'..head..chan),
-            }
+            })
         end
-        _couple1{
+        _couple1('couple_'..chan, grvl.active_src, {
             x = left and 8 or 16, y = 7,
             levels = { 4, 15 },
             state = grvl.of_param('couple_'..chan),
-        }
-        _couple2{
+        })
+        _couple2('couple_'..chan, grvl.active_src, {
             x = left and 8 or 16, y = 8,
             levels = { 4, 15 },
             state = grvl.of_param('couple_'..chan),
-        }
+        })
     end
 end
 
