@@ -1,5 +1,7 @@
 local App = {}
 
+local buffers = grvl.buffers
+
 local function Channel()
     local _rec = Patcher.grid.destination(Grid.toggle())
     local _play = Patcher.grid.destination(Grid.toggle())
@@ -28,6 +30,32 @@ local function Channel()
     return function(props)
         local chan = props.channel
         local left, right = props.side=='left', props.size=='right'
+
+        if crops.device == 'grid' and crops.mode == 'redraw' then
+            local g = crops.handler
+            local buf = patcher.get_destination_plus_param('buffer_'..chan)
+
+            --draw end
+            do
+                local x = (left and 1 or 9) + util.round(
+                    (patcher.get_destination_plus_param('loop_end_'..chan) / time_max) * 7
+                )
+                g:led(x, 5, 4)
+            end
+
+            --draw phase
+            if 
+                buffers[buf].recorded 
+                or buffers[buf].manual 
+                or buffers[buf].loaded
+            then
+                local ph = buffers[buf].phase_seconds
+                local dur = buffers[buf].duration_seconds
+
+                local x = (left and 1 or 9) + util.round((ph / dur) * 7)
+                g:led(x, 5, 4)
+            end
+        end
 
         _rec('record_'..chan, grvl.active_src, {
             x = left and 1 or 15, y = 1,
