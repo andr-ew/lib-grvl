@@ -1,5 +1,25 @@
-grvl = {}
-    
+local buffers = {}
+        
+function grvl.reset_buffer(buf)
+    -- clock.cancel(timer)
+    buffers[buf].phase_seconds = 0
+    buffers[buf].duration_seconds = 0
+
+    buffers[buf].timer_seconds = 0
+    buffers[buf].recording = { false, false }
+    buffers[buf].recorded = false
+    buffers[buf].manual = false
+    buffers[buf].loaded = false
+    -- buffers[buf].loaded_seconds = 0
+end
+
+for buf = 1,2 do
+    buffers[buf] = {}
+    grvl.reset_buffer(buf)
+end
+
+grvl.buffers = buffers
+
 local function process_param(arg) params:set(table.unpack(arg)) end
 
 patterns = {}

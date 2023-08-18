@@ -2,171 +2,150 @@ local time_volt_scale = 5
 local manual_seconds = 7/4
 local max_seconds = 55
 local silent = true
+local timer_quant = 0.02
     
-local function add_param_dest(args)
-    params:add(args)
-    patcher.add_destination(args.id, args.action)
-end
+local buffers = grvl.buffers
+local reset_buffer = grvl.reset_buffer
 
---add track params
-for chan = 1,2 do
-    local actions = {}
+-- add shared actions    
+local actions = {}
+do
+    --TODO: 'rate' param
+    local function get_rate_w(chan)
+        local play = patcher.get_destination_plus_param('play_'..chan)
+        local rev_w = (
+            patcher.get_destination_plus_param('reverse_write_'..chan) == 0
+        ) and 1 or -1
+        local oct_w = patcher.get_destination_plus_param('octave_write_'..chan)
+        return 2^oct_w * rev_w * play
+    end
+    local function get_rate_r(chan)
+        local play = patcher.get_destination_plus_param('play_'..chan)
+        local rev_r = (
+            patcher.get_destination_plus_param('reverse_read_'..chan) == 0
+        ) and 1 or -1
+        local oct_r = patcher.get_destination_plus_param('octave_read_'..chan)
+        return 2^oct_r * rev_r * play
+    end
 
-    do
-        --TODO: 'rate' param
-        local function get_rate_w()
-            local play = patcher.get_destination_plus_param('play_'..chan)
-            local rev_w = (
-                patcher.get_destination_plus_param('reverse_write_'..chan) == 0
-            ) and 1 or -1
-            local oct_w = patcher.get_destination_plus_param('octave_write_'..chan)
-            return 2^oct_w * rev_w * play
+    local function position(head, chan, pos) 
+        pos = pos or 0
+
+        engine['pos_minutes_'..head](chan, pos/60) 
+        engine['pos_trig_'..head](chan, 1)
+
+        clock.run(function() 
+            clock.sleep(0.03)
+            engine['pos_trig_'..head](chan, 0)
+        end)
+    end
+
+    local function tick(chan, buf)
+        while buffers[buf].recording[chan] do
+            local r_w = get_rate_w(chan)
+
+            clock.sleep(timer_quant)
+            buffers[buf].timer_seconds = buffers[buf].timer_seconds + (timer_quant * r_w)
+
+            if buffers[buf].timer_seconds > max_seconds then punch_out(true) end
         end
-        local function get_rate_r()
-            local play = patcher.get_destination_plus_param('play_'..chan)
-            local rev_r = (
-                patcher.get_destination_plus_param('reverse_read_'..chan) == 0
-            ) and 1 or -1
-            local oct_r = patcher.get_destination_plus_param('octave_read_'..chan)
-            return 2^oct_r * rev_r * play
-        end
+    end
+    local function punch_in(chan, buf)
+        buffers[buf].recording[chan] = true
+        clock.run(tick, chan, buf)
 
-        local headroom
-        local timer
-        local timer_quant
-        local timer_seconds
-        local recording
-        local recorded
-        local manual
-        local loaded
-        local loaded_seconds
-
-        local function reset()
-            headroom = 5
-            -- clock.cancel(timer)
-            timer_quant = 0.02
-            timer_seconds = 0
-            recording = false
-            recorded = false
-            manual = false
-            loaded = false
-            loaded_seconds = 0
-        end
-        reset()
-        
-        function actions.clear()
-            local buf = patcher.get_destination_plus_param('buffer_'..chan)
-            
-            engine.clear_buf(buf)
-
-            local len = math.abs(
-                patcher.get_destination_plus_param('loop_end_'..chan) 
-                - patcher.get_destination_plus_param('loop_start_'..chan)
-            )
-
-            if (not manual) or (len==0) then
-                params:set('record_'..chan, 0, silent)
-                params:set('loop_start_'..chan, 0, silent)
-                params:set('loop_end_'..chan, 0, silent)
-                reset()
-            end
-
-            actions.rate_start_end()
-
-            crops.dirty.grid = true
-        end
-
-        for _,head in ipairs{ 'read', 'write' } do
-            actions['position_'..head] = function(pos)
-                pos = pos or 0
-
-                engine['pos_minutes_'..head](chan, pos/60) 
-                engine['pos_trig_'..head](chan, 1)
-
-                clock.run(function() 
-                    clock.sleep(0.03)
-                    engine['pos_trig_'..head](chan, 0)
-                end)
-            end
-        end
-
-        local function tick()
-            while recording do
-                local r_w = get_rate_w()
-
-                clock.sleep(timer_quant)
-                timer_seconds = timer_seconds + (timer_quant * r_w)
-
-                if timer_seconds > max_seconds then punch_out(true) end
-            end
-        end
-
-        local function punch_in()
-            recording = true
-            actions.position_write(0)
-
-            timer = clock.run(tick)
+        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
+            position('write', chan, 0)
 
             params:set('record_'..chan, 1, silent)
 
             params:set('loop_start_'..chan, 0, silent)
             params:set('loop_end_'..chan, time_volt_scale, silent)
         end
-        local function punch_out(manual)
-            actions.position_write(0)
-
-            recording = false
-            recorded = true
-            
-            params:set('record_'..chan, manual and 1 or 0, silent)
+    end
+    local function punch_out(chan, buf)
+        buffers[buf].recording[chan] = false --this line stops the clock
+        buffers[buf].recorded = true
+        
+        if buffers[buf].manual then
+            buffers[buf].duration_seconds = manual_seconds
+        else
+            buffers[buf].duration_seconds = buffers[buf].timer_seconds
         end
+        
+        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
+            position('write', chan, 0)
 
-        --TODO: sample loading action
+            if buffers[buf].manual then
+                params:set('record_'..chan, 1, silent)
+            end
+        end
+    end
 
-        function actions.rate_start_end()
-            local r_w = get_rate_w()
-            local r_r = get_rate_r()
+    --TODO: support sample loading
+    function actions.rate_start_end()
+        for chan = 1,2 do
+            local r_w = get_rate_w(chan)
+            local r_r = get_rate_r(chan)
             local st_rel = patcher.get_destination_plus_param('loop_start_'..chan) 
                 / time_volt_scale
             local en_rel = patcher.get_destination_plus_param('loop_end_'..chan) 
                 / time_volt_scale
 
             local len_rel = math.abs(en_rel - st_rel)
+            
+            local buf = patcher.get_destination_plus_param('buffer_'..chan)
 
-            if len_rel > 0 and (not (recording or recorded or manual or loaded)) then
-                manual = true
-                punch_out(manual)
+            engine.buf(chan, buf)
+
+            if len_rel > 0 and (not (
+                buffers[buf].recording[chan]
+                or buffers[buf].recorded 
+                or buffers[buf].manual 
+                or buffers[buf].loaded
+            )) then
+                buffers[buf].manual = true
+                punch_out(chan, buf)
+
                 return actions.rate_start_end()
             end
             
             local rec = patcher.get_destination_plus_param('record_'..chan)
-            
-            if recorded or loaded or manual then
-                engine.rec_enable(chan, rec)
-            elseif recording then
-                engine.rec_enable(chan, 1)
+            local should_rec = len_rel > 0 and 1 or 0
+                
+            if
+                buffers[buf].recorded 
+                or buffers[buf].manual 
+                or buffers[buf].loaded
+            then
+                engine.rec_enable(chan, rec & should_rec)
+            elseif buffers[buf].recording[chan] then
+                engine.rec_enable(chan, rec & should_rec)
 
                 if rec < 1 then
-                    punch_out()
+                    punch_out(chan, buf)
+
                     return actions.rate_start_end()
                 end
             else
                 engine.rec_enable(chan, 0)
 
                 if rec > 0 then
-                    punch_in()
+                    punch_in(chan, buf)
+
                     return actions.rate_start_end()
                 end
             end
 
             local st, en
 
-            if recorded or manual or loaded then
-                local len = (
-                    (manual and manual_seconds) 
-                    or (loaded and loaded_seconds) 
-                    or (recorded and timer_seconds)
-                )
+            if
+                buffers[buf].recorded 
+                or buffers[buf].manual 
+                or buffers[buf].loaded
+            then
+                local len = buffers[buf].duration_seconds
+
                 st = st_rel * len 
                 en = en_rel * len 
             else
@@ -194,13 +173,42 @@ for chan = 1,2 do
             end
             engine.couple_phases(chan, patcher.get_destination_plus_param('couple_'..chan))
 
-
             crops.dirty.grid = true
             crops.dirty.screen = true
             crops.dirty.arc = true
         end
     end
+end
 
+local function add_param_dest(args)
+    params:add(args)
+    patcher.add_destination(args.id, args.action)
+end
+    
+local function clear(buf)
+    engine.clear_buf(buf)
+
+    for chan = 1,2 do
+        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
+            local len = math.abs(
+                patcher.get_destination_plus_param('loop_end_'..chan) 
+                - patcher.get_destination_plus_param('loop_start_'..chan)
+            )
+
+            if (not buffers[buf].manual) or (len==0) then
+                params:set('record_'..chan, 0, silent)
+                params:set('loop_start_'..chan, 0, silent)
+                params:set('loop_end_'..chan, 0, silent)
+            end
+        end
+    end
+            
+    reset_buffer(buf)
+    actions.rate_start_end()
+end
+
+--add track params
+for chan = 1,2 do
     params:add_separator('channel '..chan)
 
     add_param_dest{
@@ -216,18 +224,16 @@ for chan = 1,2 do
     params:add{
         type = 'binary', behavior = 'trigger',
         id = 'clear_'..chan, name = 'clear',
-        action = actions.clear
+        action = function()
+            local buf = patcher.get_destination_plus_param('buffer_'..chan)
+            clear(buf)
+        end
     }
     add_param_dest{
         type = 'number', id = 'buffer_'..chan, name = 'buffer',
         min = 1, max = 2, default = chan,
-        action = function() 
-            engine.buf(chan, patcher.get_destination_plus_param('buffer_'..chan))
-
-            crops.dirty.grid = true
-        end
+        action = actions.rate_start_end
     }
-
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_write_'..chan, name = 'reverse (write)',
@@ -458,4 +464,3 @@ for chan = 1,2 do
         end
     }
 end
-
