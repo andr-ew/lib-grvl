@@ -4,26 +4,46 @@ local buffers = grvl.buffers
 
 local function Channel()
     local _rec = Patcher.grid.destination(Grid.toggle())
-    local _play = Patcher.grid.destination(Grid.toggle())
+    -- local _play = Patcher.grid.destination(Grid.toggle())
     local _clear = Grid.trigger()
-    local _buffer = Patcher.grid.destination(Grid.integer())
     
+    local src_held = { 0, 0 }
+    local function set_active_src(left, v)
+        src_held = v
+
+        grvl.active_src = 'none'
+
+        for i = 1,2 do if src_held[i] > 0 then
+            grvl.active_src = patcher.sources[
+                params:get('patcher_source_'..((left and 0 or 2) + i))
+            ]
+        end end
+
+        crops.dirty.screen = true
+        crops.dirty.grid = true
+        crops.dirty.arc = true
+    end
+    local _patcher_source = Grid.momentaries()
+
+    local _buffer = Patcher.grid.destination(Grid.integer())
+
+    local _patrecs = {}
+    for i = 1,4 do
+        _patrecs[i] = Produce.grid.pattern_recorder()
+    end
+
     local _bits = Patcher.grid.destination(Grid.integer())
     local _detritus = Patcher.grid.destination(Grid.integer())
 
     local _start = Patcher.grid.destination(Grid.integer())
     local _end = Patcher.grid.destination(Grid.integer())
+
     local _reverse_write = Patcher.grid.destination(Grid.toggle())
     local _oct_write = Patcher.grid.destination(Grid.integer())
     local _reverse_read = Patcher.grid.destination(Grid.toggle())
     local _oct_read = Patcher.grid.destination(Grid.integer())
     local _couple1 = Patcher.grid.destination(Grid.toggle())
     local _couple2 = Patcher.grid.destination(Grid.toggle())
-
-    local _patrecs = {}
-    for i = 1,4 do
-        _patrecs[i] = Produce.grid.pattern_recorder()
-    end
 
     local time_max = params:lookup_param('loop_end_1').controlspec.maxval
 
@@ -58,15 +78,22 @@ local function Channel()
         end
 
         _rec('record_'..chan, grvl.active_src, {
-            x = left and 1 or 15, y = 1,
+            x = left and 1 or 16, y = 1,
             levels = { 4, 15 },
             state = grvl.of_param('record_'..chan, true),
         })
-        _play('play_'..chan, grvl.active_src, {
-            x = left and 2 or 16, y = 1,
-            levels = { 4, 15 },
-            state = grvl.of_param('play_'..chan),
-        })
+        -- _play('play_'..chan, grvl.active_src, {
+        --     x = left and 2 or 16, y = 1,
+        --     levels = { 4, 15 },
+        --     state = grvl.of_param('play_'..chan),
+        -- })
+        
+        _patcher_source{
+            x = (left and 2 or 15), y = 1, size = 2, flow = 'down',
+            levels = { 0, 4 },
+            state = crops.of_variable(src_held, set_active_src, left)
+        }
+        
         _clear{
             x = left and 1 or 16, y = 2,
             levels = { 4, 15 },
@@ -169,23 +196,33 @@ local function App()
     for i = 1,2 do _channels[i] = Channel() end
 
     local _focus_bg = Grid.fills()
-    local _grid_focus_bgs = { Grid.fills(), Grid.fills() }
+
+    local grid_focuses = { left = 1, right = 2 }
+    local function set_grid_focus(side, v)
+        grid_focuses[side] = v
+        
+        crops.dirty.screen = true
+        crops.dirty.grid = true
+        crops.dirty.arc = true
+    end
+    local _grid_focuses = { left = Grid.integer(), right = Grid.integer() }
 
     return function(props)
         _focus_bg{
             x = 7, y = 1, size = 16, wrap = 4, level = 4,
         }
-        for chan,_bg in ipairs(_grid_focus_bgs) do
-            _bg{
-                x = chan == 1 and 3 or 13, y = 2, size = 2, level = 4,
+        for side,_focus in pairs(_grid_focuses) do
+            _focus{
+                x = side == 'left' and 3 or 13, y = 2, size = 2, levels = { 4, 15 },
+                state = crops.of_variable(grid_focuses[side], set_grid_focus, side)
             }
         end
 
         _channels[1]{
-            side = 'left', channel = 1,
+            side = 'left', channel = grid_focuses.left,
         }
         _channels[2]{
-            side = 'right', channel = 2,
+            side = 'right', channel = grid_focuses.right,
         }
     end
 end
