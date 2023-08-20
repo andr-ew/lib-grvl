@@ -311,7 +311,7 @@ for chan = 1,2 do
 
     add_param_dest{
         type = 'control', id = 'output_level_'..chan, name = 'output level',
-        controlspec = cs.def{ min = 0, max = 10, default = 4, units = 'v' },
+        controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = function()
             engine.out_amp(
                 chan, 
