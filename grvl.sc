@@ -86,7 +86,7 @@ Grvl {
 
             var readGap = \read_gap.kr(1!chans).round;
 
-            var modulatedReadPhase = readPhase + (mod * \mod_read_phase.kr(0!chans));
+            var modulatedReadPhase = readPhase + (mod * \mod_read_phase.kr(1!chans));
 
             var index = modulatedReadPhase - (modulatedReadPhase % readGap);
 
@@ -176,7 +176,7 @@ Grvl {
 
             var writeMixed = (in * \rec_amp.kr(1!chans)) + (write * \feedback_amp.kr(0.5!chans));
             var offsetReadPhase = readWritePhase - (
-                rate_write.sign * ((4 * readGap) + \mod_read_phase.kr(0!chans).abs)
+                rate_write.sign * ((4 * readGap) + \mod_read_phase.kr(1!chans).abs)
             );
             var writePhase = Select.ar(\rec_enable.kr(1!chans).asInteger, [
                 DC.ar(bufFrames),

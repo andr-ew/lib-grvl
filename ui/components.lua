@@ -67,4 +67,29 @@ function Components.grid.arc_focus()
     end
 end
 
+function Components.arc.window()
+    return function(props)
+        if crops.device == 'arc' and crops.mode == 'redraw' then
+            local off = props.rotated and 16 or 0
+            local a = crops.handler
+
+            local st = props.x[1] + math.ceil(
+                props.st*(props.x[2] - props.x[1] + 2)
+            )
+            local en = props.x[1] - 1 + math.ceil(
+                props.en*(props.x[2] - props.x[1] + 2)
+            )
+            local ph = props.x[1] + util.round(
+                props.phase * (props.x[2] - props.x[1])
+            )
+
+            a:led(props.n, (st - 1) % 64 + 1 - off, props.level_st)
+            a:led(props.n, (en - 1) % 64 + 1 - off, props.level_en)
+            if props.show_phase then 
+                a:led(props.n, (ph - 1) % 64 + 1 - off, props.level_ph)
+            end
+        end
+    end
+end
+
 return Components

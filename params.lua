@@ -3,6 +3,8 @@ local manual_seconds = 7/4
 local max_seconds = 55
 local silent = true
 local timer_quant = 0.02
+
+grvl.time_volt_scale = time_volt_scale
     
 local buffers = grvl.buffers
 local reset_buffer = grvl.reset_buffer
@@ -310,12 +312,12 @@ for chan = 1,2 do
     end
 
     add_param_dest{
-        type = 'control', id = 'output_level_'..chan, name = 'output level',
+        type = 'control', id = 'level_'..chan, name = 'level',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = function()
             engine.out_amp(
                 chan, 
-                volt_amp(patcher.get_destination_plus_param('output_level_'..chan))
+                volt_amp(patcher.get_destination_plus_param('level_'..chan))
             )
             
             crops.dirty.screen = true
@@ -323,22 +325,22 @@ for chan = 1,2 do
         end
     }
     add_param_dest{
-        type = 'control', id = 'output_pan_'..chan, name = 'output pan',
+        type = 'control', id = 'pan_'..chan, name = 'pan',
         controlspec = cs.def{ min = -5, max = 5, default = chan==1 and -4 or 4, units = 'v' },
         action = function()
-            engine.out_pan(chan, patcher.get_destination_plus_param('output_pan_'..chan)/5)
+            engine.out_pan(chan, patcher.get_destination_plus_param('pan_'..chan)/5)
 
             crops.dirty.screen = true
             crops.dirty.arc = true
         end
     }
     add_param_dest{
-        type = 'control', id = 'feedback_'..chan, name = 'feedback',
+        type = 'control', id = 'old_'..chan, name = 'old',
         controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
         action = function()
             engine.feedback_amp(
                 chan, 
-                patcher.get_destination_plus_param('feedback_'..chan)/5
+                patcher.get_destination_plus_param('old_'..chan)/5
             )
 
             crops.dirty.screen = true
@@ -349,12 +351,18 @@ for chan = 1,2 do
 
     add_param_dest{
         type = 'control', id = 'loop_start_'..chan, name = 'loop start',
-        controlspec = cs.def{ min = 0, max = time_volt_scale, default = 0, units = 'v' },
+        controlspec = cs.def{ 
+            min = 0, max = time_volt_scale, default = 0, units = 'v', 
+            quantum = 1/100/2,
+        },
         action = actions.rate_start_end,
     }
     add_param_dest{
         type = 'control', id = 'loop_end_'..chan, name = 'loop end',
-        controlspec = cs.def{ min = 0, max = time_volt_scale, default = 0, units = 'v' },
+        controlspec = cs.def{ 
+            min = 0, max = time_volt_scale, default = 0, units = 'v',
+            quantum = 1/100/2,
+        },
         action = actions.rate_start_end,
     }
 
@@ -413,10 +421,10 @@ for chan = 1,2 do
 
     --TODO: test & adjust quants
     add_param_dest{
-        type = 'control', id = 'silt_freq_'..chan, name = 'silt freq',
+        type = 'control', id = 'pm_freq_'..chan, name = 'phase mod freq',
         controlspec = cs.def{ min = 0, max = 17, default = 16 },
         action = function()
-            local hz = (1/5) * 2^patcher.get_destination_plus_param('silt_freq_'..chan)
+            local hz = (1/5) * 2^patcher.get_destination_plus_param('pm_freq_'..chan)
             engine.mod_freq(chan, hz)
 
             crops.dirty.screen = true
@@ -424,10 +432,20 @@ for chan = 1,2 do
         end
     }
     add_param_dest{
-        type = 'control', id = 'silt_depth_'..chan, name = 'silt depth',
-        controlspec = cs.def{ min = -5, max = 5, default = 0, units = 'v' },
+        type = 'control', id = 'pm_freq_lag_'..chan, name = 'phase mod lag',
+        controlspec = cs.def{ min = 0, max = 3, default = 0.25 },
         action = function()
-            local depth = patcher.get_destination_plus_param('silt_depth_'..chan) * 10
+            engine.mod_freq_slew(chan, patcher.get_destination_plus_param('pm_freq_lag_'..chan))
+        end
+    }
+    add_param_dest{
+        type = 'control', id = 'pm_depth_'..chan, name = 'phase mod depth',
+        controlspec = cs.def{ 
+            min = 0, max = 5, default = 0, units = 'v',
+            quantum = 1/100/5*2
+        },
+        action = function()
+            local depth = patcher.get_destination_plus_param('pm_depth_'..chan) * 40
             engine.mod_depth(chan, depth)
 
             crops.dirty.screen = true
@@ -435,7 +453,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'option', id = 'silt_source_'..chan, name = 'silt source',
+        type = 'option', id = 'pm_source_'..chan, name = 'phase mod source',
         options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
         action = function(v)
             engine.mod_source(chan, v)
@@ -443,24 +461,24 @@ for chan = 1,2 do
             crops.dirty.screen = true
         end
     }
-    params:add{
-        type = 'option', id = 'silt_dest_'..chan, name = 'silt dest',
-        options = { 'read phase', 'write phase', 'filter freq', 'amplitude' }, default = 1,
-        action = function(v)
-            engine.mod_read_phase(chan, 0)
-            engine.mod_write_phase(chan, 0)
-            engine.mod_filter_freq(chan, 0)
-            engine.mod_out_amp(chan, 0)
+    -- params:add{
+    --     type = 'option', id = 'silt_dest_'..chan, name = 'silt dest',
+    --     options = { 'read phase', 'write phase', 'filter freq', 'amplitude' }, default = 1,
+    --     action = function(v)
+    --         engine.mod_read_phase(chan, 0)
+    --         engine.mod_write_phase(chan, 0)
+    --         engine.mod_filter_freq(chan, 0)
+    --         engine.mod_out_amp(chan, 0)
 
-            if v==1 then
-                engine.mod_read_phase(chan, 1)
-            elseif v==2 then
-                engine.mod_write_phase(chan, 1)
-            elseif v==3 then
-                engine.mod_filter_freq(chan, 225)
-            elseif v==4 then
-                engine.mod_out_amp(chan, 1)
-            end
-        end
-    }
+    --         if v==1 then
+    --             engine.mod_read_phase(chan, 1)
+    --         elseif v==2 then
+    --             engine.mod_write_phase(chan, 1)
+    --         elseif v==3 then
+    --             engine.mod_filter_freq(chan, 225)
+    --         elseif v==4 then
+    --             engine.mod_out_amp(chan, 1)
+    --         end
+    --     end
+    -- }
 end
