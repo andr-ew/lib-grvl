@@ -30,7 +30,7 @@ end
 
 grvl.active_src = 'none'
 
-set_param = function(id, v)
+grvl.set_param = function(id, v)
     local t = { id, v }
     process_param(t)
     for i,pat in ipairs(patterns) do pat:watch(t) end
@@ -39,6 +39,15 @@ end
 function grvl.of_param(id, is_dest)
     return {
         (is_dest==false) and params:get(id) or patcher.get_destination_plus_param(id),
-        set_param, id,
+        grvl.set_param, id,
     }            
 end
+
+grvl.grid_focus = { left = 1, right = 2 }
+grvl.arc_vertical = false
+grvl.arc_focus = {
+    { 1, 1, 1, 1 },
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0 },
+}

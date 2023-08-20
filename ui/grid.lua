@@ -1,6 +1,7 @@
 local App = {}
 
 local buffers = grvl.buffers
+local set_param = grvl.set_param
 
 local function Channel()
     local _rec = Patcher.grid.destination(Grid.toggle())
@@ -195,11 +196,10 @@ local function App()
     local _channels = {}
     for i = 1,2 do _channels[i] = Channel() end
 
-    local _focus_bg = Grid.fills()
+    local _arc_focus = Components.grid.arc_focus()
 
-    local grid_focuses = { left = 1, right = 2 }
     local function set_grid_focus(side, v)
-        grid_focuses[side] = v
+        grvl.grid_focus[side] = v
         
         crops.dirty.screen = true
         crops.dirty.grid = true
@@ -208,21 +208,37 @@ local function App()
     local _grid_focuses = { left = Grid.integer(), right = Grid.integer() }
 
     return function(props)
-        _focus_bg{
-            x = 7, y = 1, size = 16, wrap = 4, level = 4,
+        -- _focus_bg{
+        --     x = 7, y = 1, size = 16, wrap = 4, level = 4,
+        -- }
+
+        _arc_focus{
+            x = 7, y = 1, levels = { 4, 15 },
+            view = grvl.arc_focus, tall = false,
+            vertical = { 
+                grvl.arc_vertical, 
+                function(v) grvl.arc_vertical = v end 
+            },
+            action = function(vertical, x, y)
+                -- crops.dirty.screen = true 
+                crops.dirty.grid = true
+                crops.dirty.arc = true
+            end
         }
+
+
         for side,_focus in pairs(_grid_focuses) do
             _focus{
                 x = side == 'left' and 3 or 13, y = 2, size = 2, levels = { 4, 15 },
-                state = crops.of_variable(grid_focuses[side], set_grid_focus, side)
+                state = crops.of_variable(grvl.grid_focus[side], set_grid_focus, side)
             }
         end
 
         _channels[1]{
-            side = 'left', channel = grid_focuses.left,
+            side = 'left', channel = grvl.grid_focus.left,
         }
         _channels[2]{
-            side = 'right', channel = grid_focuses.right,
+            side = 'right', channel = grvl.grid_focus.right,
         }
     end
 end
