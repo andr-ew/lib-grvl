@@ -12,22 +12,23 @@ local reset_buffer = grvl.reset_buffer
 -- add shared actions    
 local actions = {}
 do
-    --TODO: 'rate' param
     local function get_rate_w(chan)
         local play = patcher.get_destination_plus_param('play_'..chan)
+        local rate_w = patcher.get_destination_plus_param('rate_'..chan)
         local rev_w = (
             patcher.get_destination_plus_param('reverse_write_'..chan) == 0
         ) and 1 or -1
         local oct_w = patcher.get_destination_plus_param('octave_write_'..chan)
-        return 2^oct_w * rev_w * play
+        return 2^oct_w * 2^rate_w * rev_w * play
     end
     local function get_rate_r(chan)
         local play = patcher.get_destination_plus_param('play_'..chan)
+        local rate_r = patcher.get_destination_plus_param('rate_'..chan)
         local rev_r = (
             patcher.get_destination_plus_param('reverse_read_'..chan) == 0
         ) and 1 or -1
         local oct_r = patcher.get_destination_plus_param('octave_read_'..chan)
-        return 2^oct_r * rev_r * play
+        return 2^oct_r * 2^rate_r * rev_r * play
     end
 
     local function position(head, chan, pos) 
@@ -70,7 +71,7 @@ do
         buffers[buf].recorded = true
         
         if buffers[buf].manual then
-            buffers[buf].duration_seconds = manual_seconds
+            buffers[buf].duration_seconds = manual_seconds --TODO: scale based on current rate
         else
             buffers[buf].duration_seconds = buffers[buf].timer_seconds
         end
@@ -236,61 +237,6 @@ for chan = 1,2 do
         min = 1, max = 2, default = chan,
         action = actions.rate_start_end
     }
-    add_param_dest{
-        type = 'binary', behavior = 'toggle',
-        id = 'reverse_write_'..chan, name = 'reverse (write)',
-        action = actions.rate_start_end,
-    }
-    add_param_dest{
-        type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
-        min = -3, max = 2, default = 0,
-        action = actions.rate_start_end
-    }
-    add_param_dest{
-        type = 'binary', behavior = 'toggle',
-        id = 'reverse_read_'..chan, name = 'reverse (read)',
-        action = actions.rate_start_end,
-    }
-    add_param_dest{
-        type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
-        min = -3, max = 2, default = 0,
-        action = actions.rate_start_end
-    }
-    add_param_dest{
-        type = 'binary', behavior = 'toggle',
-        id = 'couple_'..chan, name = 'read/write couple', default = 1,
-        action = actions.rate_start_end,
-    }
-    --TODO: rate slew
-
-    add_param_dest{
-        type = 'number', id = 'bit_depth_'..chan, name = 'bit depth',
-        min = 4, max = 9, default = 9,
-        action = function() 
-            engine.bit_depth(chan, patcher.get_destination_plus_param('bit_depth_'..chan))
-
-            crops.dirty.grid = true
-        end
-    }
-    add_param_dest{
-        type = 'number', id = 'detritus_'..chan, name = 'detritus',
-        min = 1, max = 6, default = 1,
-        action = function() 
-            engine.read_gap(chan, patcher.get_destination_plus_param('detritus_'..chan))
-
-            crops.dirty.grid = true
-        end
-    }
-    add_param_dest{
-        type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
-        controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
-        action = function()
-            engine.wet_dry(chan, patcher.get_destination_plus_param('wet_dry_'..chan)/5)
-            
-            crops.dirty.screen = true
-            crops.dirty.arc = true
-        end
-    }
     
     --TODO: bitnoise?
     --TODO: drive
@@ -347,7 +293,76 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    --TODO: rate (continuous control)
+
+    add_param_dest{
+        type = 'control', id = 'rate_'..chan, name = 'rate',
+        controlspec = cs.def{ 
+            min = -5, max = 5, default = 0,
+            quantum = 1/100/10, units = 'v',
+        },
+        action = actions.rate_start_end,
+    }
+    add_param_dest{
+        type = 'binary', behavior = 'toggle',
+        id = 'reverse_write_'..chan, name = 'reverse (write)',
+        action = actions.rate_start_end,
+    }
+    add_param_dest{
+        type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
+        min = -3, max = 2, default = 0,
+        action = actions.rate_start_end
+    }
+    add_param_dest{
+        type = 'binary', behavior = 'toggle',
+        id = 'reverse_read_'..chan, name = 'reverse (read)',
+        action = actions.rate_start_end,
+    }
+    add_param_dest{
+        type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
+        min = -3, max = 2, default = 0,
+        action = actions.rate_start_end
+    }
+    add_param_dest{
+        type = 'binary', behavior = 'toggle',
+        id = 'couple_'..chan, name = 'read/write couple', default = 1,
+        action = actions.rate_start_end,
+    }
+    add_param_dest{
+        type = 'control', id = 'rate_lag_'..chan, name = 'rate lag',
+        controlspec = cs.def{ min = 0, max = 3, default = 0, units = 'v', },
+        action = function()
+            engine.rate_slew(chan, patcher.get_destination_plus_param('rate_lag_'..chan))
+        end
+    }
+
+    add_param_dest{
+        type = 'number', id = 'bit_depth_'..chan, name = 'bit depth',
+        min = 4, max = 9, default = 9,
+        action = function() 
+            engine.bit_depth(chan, patcher.get_destination_plus_param('bit_depth_'..chan))
+
+            crops.dirty.grid = true
+        end
+    }
+    add_param_dest{
+        type = 'number', id = 'detritus_'..chan, name = 'detritus',
+        min = 1, max = 6, default = 1,
+        action = function() 
+            engine.read_gap(chan, patcher.get_destination_plus_param('detritus_'..chan))
+
+            crops.dirty.grid = true
+        end
+    }
+    add_param_dest{
+        type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
+        controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
+        action = function()
+            engine.wet_dry(chan, patcher.get_destination_plus_param('wet_dry_'..chan)/5)
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
+        end
+    }
 
     add_param_dest{
         type = 'control', id = 'loop_start_'..chan, name = 'loop start',
@@ -417,12 +432,9 @@ for chan = 1,2 do
         end
     }
 
-    --TODO: interp
-
-    --TODO: test & adjust quants
     add_param_dest{
         type = 'control', id = 'pm_freq_'..chan, name = 'phase mod freq',
-        controlspec = cs.def{ min = 0, max = 17, default = 16 },
+        controlspec = cs.def{ min = 0, max = 17, default = 16, units = 'v' },
         action = function()
             local hz = (1/5) * 2^patcher.get_destination_plus_param('pm_freq_'..chan)
             engine.mod_freq(chan, hz)
@@ -433,7 +445,7 @@ for chan = 1,2 do
     }
     add_param_dest{
         type = 'control', id = 'pm_freq_lag_'..chan, name = 'phase mod lag',
-        controlspec = cs.def{ min = 0, max = 3, default = 0.25 },
+        controlspec = cs.def{ min = 0, max = 3, default = 0.25, units = 'v' },
         action = function()
             engine.mod_freq_slew(chan, patcher.get_destination_plus_param('pm_freq_lag_'..chan))
         end

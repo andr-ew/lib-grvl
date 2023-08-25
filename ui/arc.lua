@@ -122,11 +122,52 @@ for i,window_thing in ipairs{ 'start', 'end' } do
                     level_st = is_start and 15 or 4,
                     level_en = is_start and 4 or 15,
                     level_ph = 4,
-                    st = patcher.get_destination_plus_param('loop_start_'..chan)/grvl.time_volt_scale,
-                    en = patcher.get_destination_plus_param('loop_end_'..chan)/grvl.time_volt_scale,
+                    st = (
+                        patcher.get_destination_plus_param('loop_start_'..chan)
+                        / grvl.time_volt_scale
+                    ),
+                    en = (
+                        patcher.get_destination_plus_param('loop_end_'..chan) 
+                        / grvl.time_volt_scale
+                    ),
                 }
             end
         end
+    end
+end
+
+Destinations['rate_'] = function(prefix, x, y)
+    local spec = params:lookup_param(prefix..1).controlspec
+
+    local _rate = Arc.control()
+    local _marks = {}
+    for i = spec.minval, spec.maxval do
+        _marks[i] = Arc.control()
+    end
+
+    return function(props) 
+        local chan = props.chan
+        local id = prefix..chan
+        local xx = { 64 - (5*5) + 1 , 5*5 + 1 }
+
+        if crops.mode == 'redraw' then for i = spec.minval, spec.maxval do
+            _marks[i]{
+                n = tonumber(grvl.arc_vertical and y or x),
+                controlspec = spec,
+                state = { i },
+                levels = { 0, 0, 4 },
+                -- x = { 33, 33 },
+                x = xx,
+            }
+        end end
+        _rate{
+            n = tonumber(grvl.arc_vertical and y or x),
+            -- sensitivity = 0.25, 
+            controlspec = spec,
+            state = { patcher.get_destination_plus_param(id), set_param, id },
+            levels = { 0, 0, 15 },
+            x = xx,
+        }
     end
 end
 
