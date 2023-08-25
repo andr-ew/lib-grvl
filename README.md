@@ -2,7 +2,7 @@
 
 dual data pavement.
 
-a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora).
+a spiritual successor to [anaphora](https://github.com/andr-ew/prosody#anaphora) & [dirge](https://github.com/andr-ew/prosody#dirge).
 
 ## hardware
 
