@@ -38,7 +38,9 @@ end
 
 function grvl.of_param(id, is_dest)
     return {
-        (is_dest==false) and params:get(id) or patcher.get_destination_plus_param(id),
+        (is_dest==false or crops.mode=='input') 
+            and params:get(id) 
+            or patcher.get_destination_plus_param(id),
         grvl.set_param, id,
     }            
 end

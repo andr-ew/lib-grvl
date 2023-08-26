@@ -3,7 +3,7 @@ local set_param = grvl.set_param
 
 local Destinations = {}
 
-Destinations['level_'] = function(prefix, x, y)
+Destinations['level_'] = function(prefix)
     local _lvl = Arc.control()
     local _fill = Arc.control()
 
@@ -14,20 +14,20 @@ Destinations['level_'] = function(prefix, x, y)
         local spec = params:lookup_param(id).controlspec
 
         _lvl{
-            n = tonumber(grvl.arc_vertical and y or x),
+            n = props.n,
             sensitivity = 0.5, 
             controlspec = spec,
-            state = { patcher.get_destination_plus_param(id), set_param, id },
-            levels = { 0, 4, 4 },
+            state = grvl.of_param(id),
+            levels = { 0, props.levels[1], props.levels[1] },
             -- x = { 33, 33 },
             x = xx,
         }
         if crops.mode == 'redraw' then
             _fill{
-                n = tonumber(grvl.arc_vertical and y or x),
+                n = props.n,
                 controlspec = spec,
                 state = { spec.default },
-                levels = { 0, 0, 15 },
+                levels = { 0, 0, props.levels[2] },
                 -- x = { 33, 33 },
                 x = xx,
             }
@@ -35,7 +35,7 @@ Destinations['level_'] = function(prefix, x, y)
     end
 end
 
-Destinations['old_'] = function(prefix, x, y)
+Destinations['old_'] = function(prefix)
     local _old = Arc.control()
 
     return function(props) 
@@ -45,17 +45,17 @@ Destinations['old_'] = function(prefix, x, y)
         local xx = { 42 - 4, 56 }
 
         _old{
-            n = tonumber(grvl.arc_vertical and y or x),
+            n = props.n,
             sensitivity = 0.5, 
             controlspec = spec,
-            state = { patcher.get_destination_plus_param(id), set_param, id },
-            levels = { 4, 15, 15 },
+            state = grvl.of_param(id),
+            levels = { props.levels[1], props.levels[2], props.levels[2] },
             x = xx,
         }
     end
 end
 
-Destinations['pm_freq_'] = function(prefix, x, y)
+Destinations['pm_freq_'] = function(prefix)
     local _freq = Arc.control()
     local _mark = Arc.control()
 
@@ -67,20 +67,20 @@ Destinations['pm_freq_'] = function(prefix, x, y)
 
         if crops.mode == 'redraw' then
             _mark{
-                n = tonumber(grvl.arc_vertical and y or x),
+                n = props.n,
                 controlspec = spec,
                 state = { 0 },
-                levels = { 0, 0, 4 },
+                levels = { 0, 0, props.levels[1] },
                 -- x = { 33, 33 },
                 x = xx,
             }
         end
         _freq{
-            n = tonumber(grvl.arc_vertical and y or x),
+            n = props.n,
             sensitivity = 0.25, 
             controlspec = spec,
-            state = { patcher.get_destination_plus_param(id), set_param, id },
-            levels = { 0, 0, 15 },
+            state = grvl.of_param(id),
+            levels = { 0, 0, props.levels[2] },
             x = xx,
         }
     end
@@ -89,7 +89,7 @@ end
 for i,window_thing in ipairs{ 'start', 'end' } do
     local is_start = i==1
 
-    Destinations['loop_'..window_thing..'_'] = function(prefix, x, y)
+    Destinations['loop_'..window_thing..'_'] = function(prefix)
         local _win = { enc = Arc.control(), ring = Components.arc.window() }
 
         return function(props)
@@ -99,10 +99,10 @@ for i,window_thing in ipairs{ 'start', 'end' } do
 
             if crops.mode == 'input' then
                 _win.enc{
-                    n = tonumber(grvl.arc_vertical and y or x),
+                    n = props.n,
                     sensitivity = spec.quantum*100, 
                     controlspec = spec,
-                    state = { patcher.get_destination_plus_param(id), set_param, id },
+                    state = grvl.of_param(id),
                 }
             elseif crops.mode == 'redraw' then
                 local buf = patcher.get_destination_plus_param('buffer_'..chan)
@@ -115,7 +115,7 @@ for i,window_thing in ipairs{ 'start', 'end' } do
                 )
 
                 _win.ring{
-                    n = tonumber(grvl.arc_vertical and y or x),
+                    n = props.n,
                     x = { 33, 64+32 }, 
                     phase = ph / dur,
                     show_phase = show_phase,
@@ -136,7 +136,7 @@ for i,window_thing in ipairs{ 'start', 'end' } do
     end
 end
 
-Destinations['rate_'] = function(prefix, x, y)
+Destinations['rate_'] = function(prefix)
     local spec = params:lookup_param(prefix..1).controlspec
 
     local _rate = Arc.control()
@@ -152,26 +152,26 @@ Destinations['rate_'] = function(prefix, x, y)
 
         if crops.mode == 'redraw' then for i = spec.minval, spec.maxval do
             _marks[i]{
-                n = tonumber(grvl.arc_vertical and y or x),
+                n = props.n,
                 controlspec = spec,
                 state = { i },
-                levels = { 0, 0, 4 },
+                levels = { 0, 0, props.levels[1] },
                 -- x = { 33, 33 },
                 x = xx,
             }
         end end
         _rate{
-            n = tonumber(grvl.arc_vertical and y or x),
+            n = props.n,
             -- sensitivity = 0.25, 
             controlspec = spec,
-            state = { patcher.get_destination_plus_param(id), set_param, id },
-            levels = { 0, 0, 15 },
+            state = grvl.of_param(id),
+            levels = { 0, 0, props.levels[2] },
             x = xx,
         }
     end
 end
 
-Destinations['other'] = function(prefix, x, y)
+Destinations['other'] = function(prefix)
     local _ctl = Arc.control()
 
     return function(props) 
@@ -180,11 +180,11 @@ Destinations['other'] = function(prefix, x, y)
         local spec = params:lookup_param(id).controlspec
 
         _ctl{
-            n = tonumber(grvl.arc_vertical and y or x),
+            n = props.n,
             sensitivity = spec.quantum*100, 
             controlspec = spec,
-            state = { patcher.get_destination_plus_param(id), set_param, id },
-            -- levels = { 4, 15, 15 },
+            state = grvl.of_param(id),
+            levels = { 0, props.levels[1], props.levels[2] },
         }
     end
 end
@@ -200,9 +200,9 @@ local function App(args)
         for x = 1,4 do
             local Destination = Destinations[map[y][x]]
             if Destination then
-                _params[y][x] = Destination(map[y][x], x, y)
+                _params[y][x] = Patcher.arc.destination(Destination(map[y][x], x, y))
             elseif map[y][x] then
-                _params[y][x] = Destinations['other'](map[y][x], x, y)
+                _params[y][x] = Patcher.arc.destination(Destinations['other'](map[y][x], x, y))
             end
         end
     end
@@ -210,10 +210,14 @@ local function App(args)
     return function()
         for y = 1,4 do for x = 1,4 do
             if grvl.arc_focus[y][x] > 0 and _params[y][x] then
-                _params[y][x]{
+                local chan = grvl.grid_focus[(x <3) and 'left' or 'right'] 
+
+                _params[y][x](map[y][x]..chan, grvl.active_src, {
+                    n = tonumber(grvl.arc_vertical and y or x),
                     rotated = rotated,
-                    chan = grvl.grid_focus[(x <3) and 'left' or 'right']
-                }
+                    chan = chan,
+                    levels = { 4, 15 }
+                })
             end
         end end
     end
