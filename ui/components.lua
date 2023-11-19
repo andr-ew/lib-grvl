@@ -1,7 +1,7 @@
 local Components = {
     grid = {},
     arc = {},
-    screen = {},
+    norns = {},
 }
 
 --TODO: refactor to use states more correctly
@@ -129,6 +129,68 @@ function Components.arc.window()
                 a:led(props.n, (ph - 1) % 64 + 1 - off, props.level_ph)
             end
         end
+    end
+end
+
+function Components.norns.toggle_hold()
+    local downtime = nil
+    local blink = false
+    local blink_level = 2
+
+    return function(props)
+        if crops.device == 'key' and crops.mode == 'input' then
+            local n, z = table.unpack(crops.args) 
+
+            if n == props.n then
+                if z==1 then
+                    downtime = util.time()
+                elseif z==0 then
+                    if downtime and ((util.time() - downtime) > 0.5) then 
+                        blink = true
+                        blink_level = 1
+                        crops.dirty.screen = true
+
+                        clock.run(function() 
+                            clock.sleep(0.1)
+                            blink_level = 2
+                            crops.dirty.screen = true
+
+                            params:delta(props.id_hold)
+
+                            clock.sleep(0.2)
+                            blink_level = 1
+                            crops.dirty.screen = true
+
+                            clock.sleep(0.4)
+                            blink = false
+                            crops.dirty.screen = true
+                        end)
+                    else
+                        _key.toggle{
+                            n = props.n, edge = 'falling',
+                            state = {
+                                params:get(props.id_toggle), 
+                                params.set, params, props.id_toggle,
+                            },
+                        }
+                    end
+                    
+                    downtime = nil
+                end
+            end
+        end
+
+        _screen.text{
+            x = k[props.n].x, y = k[props.n].y,
+            text = blink and (
+                props.label_hold or props.id_hold
+            ) or (
+                props.label_toggle or props.id_toggle
+            ),
+            level = props.levels[
+                blink and blink_level or (params:get(props.id_toggle) + 1)
+            ],
+        }
     end
 end
 

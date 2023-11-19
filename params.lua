@@ -31,6 +31,9 @@ do
         return 2^oct_r * 2^rate_r * rev_r * play
     end
 
+    grvl.get_rate_w = get_rate_w
+    grvl.get_rate_r = get_rate_r
+
     local function position(head, chan, pos) 
         pos = pos or 0
 
