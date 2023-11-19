@@ -1,5 +1,3 @@
-local App = {}
-
 local buffers = grvl.buffers
 local set_param = grvl.set_param
 
