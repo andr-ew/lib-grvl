@@ -137,6 +137,9 @@ function Components.norns.toggle_hold()
     local blink = false
     local blink_level = 2
 
+    local _toggle = Key.toggle()
+    local _text = Screen.text()
+
     return function(props)
         if crops.device == 'key' and crops.mode == 'input' then
             local n, z = table.unpack(crops.args) 
@@ -166,7 +169,7 @@ function Components.norns.toggle_hold()
                             crops.dirty.screen = true
                         end)
                     else
-                        _key.toggle{
+                        _toggle{
                             n = props.n, edge = 'falling',
                             state = {
                                 params:get(props.id_toggle), 
@@ -180,17 +183,16 @@ function Components.norns.toggle_hold()
             end
         end
 
-        _screen.text{
-            x = k[props.n].x, y = k[props.n].y,
-            text = blink and (
-                props.label_hold or props.id_hold
-            ) or (
-                props.label_toggle or props.id_toggle
-            ),
-            level = props.levels[
-                blink and blink_level or (params:get(props.id_toggle) + 1)
-            ],
-        }
+        props.text = blink and (
+            props.label_hold or props.id_hold
+        ) or (
+            props.label_toggle or props.id_toggle
+        )
+        props.level = props.levels[
+            blink and blink_level or (params:get(props.id_toggle) + 1)
+        ]
+
+        _text(props)
     end
 end
 
