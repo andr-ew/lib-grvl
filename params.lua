@@ -149,8 +149,8 @@ do
             then
                 local len = buffers[buf].duration_seconds
 
-                st = st_rel * len 
-                en = en_rel * len 
+                st = st_rel * len
+                en = en_rel * len
             else
                 st = 0
                 en = max_seconds
@@ -224,6 +224,7 @@ for chan = 1,2 do
         id = 'play_'..chan, name = 'play', default = 1,
         action = actions.rate_start_end
     }
+    --TODO: trigger dest
     params:add{
         type = 'binary', behavior = 'trigger',
         id = 'clear_'..chan, name = 'clear',
@@ -258,7 +259,7 @@ for chan = 1,2 do
     end
 
     add_param_dest{
-        type = 'control', id = 'level_'..chan, name = 'level',
+        type = 'control', id = 'level_'..chan, name = 'lvl',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = function()
             engine.out_amp(
@@ -328,7 +329,7 @@ for chan = 1,2 do
         action = actions.rate_start_end,
     }
     add_param_dest{
-        type = 'control', id = 'rate_lag_'..chan, name = 'rate lag',
+        type = 'control', id = 'rate_lag_'..chan, name = 'slew',
         controlspec = cs.def{ min = 0, max = 3, default = 0, units = 'v', },
         action = function()
             engine.rate_slew(chan, patcher.get_destination_plus_param('rate_lag_'..chan))
@@ -336,7 +337,7 @@ for chan = 1,2 do
     }
 
     add_param_dest{
-        type = 'number', id = 'bit_depth_'..chan, name = 'bit depth',
+        type = 'number', id = 'bit_depth_'..chan, name = 'bits',
         min = 4, max = 9, default = 9,
         action = function() 
             engine.bit_depth(chan, patcher.get_destination_plus_param('bit_depth_'..chan))
@@ -345,7 +346,7 @@ for chan = 1,2 do
         end
     }
     add_param_dest{
-        type = 'number', id = 'detritus_'..chan, name = 'detritus',
+        type = 'number', id = 'detritus_'..chan, name = 'dtrts',
         min = 1, max = 6, default = 1,
         action = function() 
             engine.read_gap(chan, patcher.get_destination_plus_param('detritus_'..chan))
@@ -365,7 +366,7 @@ for chan = 1,2 do
     }
 
     add_param_dest{
-        type = 'control', id = 'loop_start_'..chan, name = 'loop start',
+        type = 'control', id = 'loop_start_'..chan, name = 'start',
         controlspec = cs.def{ 
             min = 0, max = time_volt_scale, default = 0, units = 'v', 
             quantum = 1/100/2,
@@ -373,7 +374,7 @@ for chan = 1,2 do
         action = actions.rate_start_end,
     }
     add_param_dest{
-        type = 'control', id = 'loop_end_'..chan, name = 'loop end',
+        type = 'control', id = 'loop_end_'..chan, name = 'end',
         controlspec = cs.def{ 
             min = 0, max = time_volt_scale, default = 0, units = 'v',
             quantum = 1/100/2,
@@ -392,7 +393,7 @@ for chan = 1,2 do
     end
 
     add_param_dest{
-        type = 'control', id = 'lowpass_freq_'..chan, name = 'lowpass freq',
+        type = 'control', id = 'lowpass_freq_'..chan, name = 'lp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 7, units = 'v' },
         action = function()
             engine.lp_freq(
@@ -402,7 +403,7 @@ for chan = 1,2 do
         end
     } 
     add_param_dest{
-        type = 'control', id = 'lowpass_q_'..chan, name = 'lowpass q',
+        type = 'control', id = 'lowpass_q_'..chan, name = 'lp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
         action = function()
             engine.lp_q(
@@ -412,7 +413,7 @@ for chan = 1,2 do
         end
     }
     add_param_dest{
-        type = 'control', id = 'highpass_freq_'..chan, name = 'highpass freq',
+        type = 'control', id = 'highpass_freq_'..chan, name = 'hp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 0, units = 'v' },
         action = function()
             engine.hp_freq(
@@ -422,7 +423,7 @@ for chan = 1,2 do
         end
     } 
     add_param_dest{
-        type = 'control', id = 'highpass_q_'..chan, name = 'highpass q',
+        type = 'control', id = 'highpass_q_'..chan, name = 'hp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
         action = function()
             engine.hp_rq(
@@ -433,7 +434,7 @@ for chan = 1,2 do
     }
 
     add_param_dest{
-        type = 'control', id = 'pm_freq_'..chan, name = 'phase mod freq',
+        type = 'control', id = 'pm_freq_'..chan, name = 'pm frq',
         controlspec = cs.def{ min = 0, max = 17, default = 16, units = 'v' },
         action = function()
             local hz = (1/5) * 2^patcher.get_destination_plus_param('pm_freq_'..chan)
@@ -444,14 +445,14 @@ for chan = 1,2 do
         end
     }
     add_param_dest{
-        type = 'control', id = 'pm_freq_lag_'..chan, name = 'phase mod lag',
+        type = 'control', id = 'pm_freq_lag_'..chan, name = 'pm lag',
         controlspec = cs.def{ min = 0, max = 3, default = 0.25, units = 'v' },
         action = function()
             engine.mod_freq_slew(chan, patcher.get_destination_plus_param('pm_freq_lag_'..chan))
         end
     }
     add_param_dest{
-        type = 'control', id = 'pm_depth_'..chan, name = 'phase mod depth',
+        type = 'control', id = 'pm_depth_'..chan, name = 'pm dep',
         controlspec = cs.def{ 
             min = 0, max = 5, default = 0, units = 'v',
             quantum = 1/100/5*2
@@ -465,7 +466,7 @@ for chan = 1,2 do
         end
     }
     params:add{
-        type = 'option', id = 'pm_source_'..chan, name = 'phase mod source',
+        type = 'option', id = 'pm_source_'..chan, name = 'pm src',
         options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
         action = function(v)
             engine.mod_source(chan, v)

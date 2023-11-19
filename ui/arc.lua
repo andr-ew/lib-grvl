@@ -1,5 +1,4 @@
 local buffers = grvl.buffers
-local set_param = grvl.set_param
 
 local Destinations = {}
 
@@ -192,7 +191,6 @@ end
 local function App(args)
     local map = args.map
     local rotated = args.rotated
-    local wide = args.grid_wide
 
     local _params = {}
     for y = 1,4 do

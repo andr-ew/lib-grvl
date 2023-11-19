@@ -20,7 +20,7 @@ function Components.grid.arc_focus()
                 
                 if
                     x >= props.x and x <= props.x + (3) 
-                        and y >= props.y and y <= props.y + (tall and 5 or 3)
+                    and y >= props.y and y <= props.y + (tall and 5 or 3)
                 then
                     local dx, dy = x - props.x + 1, y - props.y + 1
 
@@ -62,6 +62,46 @@ function Components.grid.arc_focus()
                 for i = 0,tall and 5 or 3 do for j = 0,3 do 
                     g:led(props.x + j, props.y + i, props.levels[props.view[i + 1][j + 1] + 1])
                 end end
+            end
+        end
+    end
+end
+
+function Components.grid.norns_focus()
+    return function(props)
+        if crops.device == 'grid' then
+            if crops.mode == 'input' then
+                local x, y, z = table.unpack(crops.args)
+
+                if z == 1 then
+                    if
+                        x >= props.x and x <= props.x + 3
+                        and y >= props.y and y <= props.y + 3
+                    then
+                        local dx, dy = x - props.x + 1, y - props.y + 1
+                        
+                        crops.set_state(
+                            props.state, 
+                            dy + (dx <3 and 0 or 4)
+                        )                        
+                    end
+                end
+            elseif crops.mode == 'redraw' then
+                local g = crops.handler
+                local v = crops.get_state(props.state) or 1
+
+                for i = 1,8 do
+                    local y = (i - 1)%4
+                    local x = (i - 1)//4
+
+                    for ii = 0,1 do
+                        g:led(
+                            props.x + ii + x*2, 
+                            props.y + y, 
+                            props.levels[v == i and 2 or 1]
+                        )
+                    end
+                end
             end
         end
     end

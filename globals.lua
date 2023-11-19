@@ -53,3 +53,4 @@ grvl.arc_focus = {
     { 0, 0, 0, 0 },
     { 0, 0, 0, 0 },
 }
+grvl.norns_focus = 1

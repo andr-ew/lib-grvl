@@ -197,6 +197,7 @@ local function App()
     for i = 1,2 do _channels[i] = Channel() end
 
     local _arc_focus = Components.grid.arc_focus()
+    local _norns_focus = Components.grid.norns_focus()
 
     local function set_grid_focus(side, v)
         grvl.grid_focus[side] = v
@@ -212,19 +213,31 @@ local function App()
         --     x = 7, y = 1, size = 16, wrap = 4, level = 4,
         -- }
 
-        _arc_focus{
-            x = 7, y = 1, levels = { 4, 15 },
-            view = grvl.arc_focus, tall = false,
-            vertical = { 
-                grvl.arc_vertical, 
-                function(v) grvl.arc_vertical = v end 
-            },
-            action = function(vertical, x, y)
-                -- crops.dirty.screen = true 
-                crops.dirty.grid = true
-                crops.dirty.arc = true
-            end
-        }
+        if arc_connected then
+            _arc_focus{
+                x = 7, y = 1, levels = { 4, 15 },
+                view = grvl.arc_focus, tall = false,
+                vertical = { 
+                    grvl.arc_vertical, 
+                    function(v) grvl.arc_vertical = v end 
+                },
+                action = function(vertical, x, y)
+                    crops.dirty.screen = true 
+                    crops.dirty.grid = true
+                    crops.dirty.arc = true
+                end
+            }
+        else
+            _norns_focus{
+                x = 7, y = 1, levels = { 4, 15 },
+                state = crops.of_variable(grvl.norns_focus, function(v) 
+                    grvl.norns_focus = v
+
+                    crops.dirty.grid = true
+                    crops.dirty.screen = true
+                end)
+            }
+        end
 
 
         for side,_focus in pairs(_grid_focuses) do
