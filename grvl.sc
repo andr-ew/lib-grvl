@@ -298,6 +298,7 @@ Grvl {
     free {
         synth.free;
         buffers.do({ arg b; b.free; });
+        tfBuf.free;
         writePhaseBus.free;
         readPhaseBus.free;
     }
