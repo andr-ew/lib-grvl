@@ -158,7 +158,8 @@ function Components.norns.toggle_hold()
                             blink_level = 2
                             crops.dirty.screen = true
 
-                            params:delta(props.id_hold)
+                            -- params:delta(props.id_hold)
+                            props.action_hold()
 
                             clock.sleep(0.2)
                             blink_level = 1
@@ -171,10 +172,7 @@ function Components.norns.toggle_hold()
                     else
                         _toggle{
                             n = props.n, edge = 'falling',
-                            state = {
-                                params:get(props.id_toggle), 
-                                params.set, params, props.id_toggle,
-                            },
+                            state = props.state_toggle,
                         }
                     end
                     
@@ -184,12 +182,12 @@ function Components.norns.toggle_hold()
         end
 
         props.text = blink and (
-            props.label_hold or props.id_hold
+            props.label_hold
         ) or (
-            props.label_toggle or props.id_toggle
+            props.label_toggle
         )
         props.level = props.levels[
-            blink and blink_level or (params:get(props.id_toggle) + 1)
+            blink and blink_level or ((crops.get_state(props.state_toggle) or 0) + 1)
         ]
 
         _text(props)
