@@ -9,30 +9,38 @@ grvl.time_volt_scale = time_volt_scale
 local buffers = grvl.buffers
 local reset_buffer = grvl.reset_buffer
 
--- add shared actions    
-local actions = {}
-do
-    local function get_rate_w(chan)
-        local play = patcher.get_destination_plus_param('play_'..chan)
-        local rate_w = patcher.get_destination_plus_param('rate_'..chan)
-        local rev_w = (
-            patcher.get_destination_plus_param('reverse_write_'..chan) == 0
-        ) and 1 or -1
-        local oct_w = patcher.get_destination_plus_param('octave_write_'..chan)
-        return 2^oct_w * 2^rate_w * rev_w * play
-    end
-    local function get_rate_r(chan)
-        local play = patcher.get_destination_plus_param('play_'..chan)
-        local rate_r = patcher.get_destination_plus_param('rate_'..chan)
-        local rev_r = (
-            patcher.get_destination_plus_param('reverse_read_'..chan) == 0
-        ) and 1 or -1
-        local oct_r = patcher.get_destination_plus_param('octave_read_'..chan)
-        return 2^oct_r * 2^rate_r * rev_r * play
-    end
+local vals = {}
 
-    grvl.get_rate_w = get_rate_w
-    grvl.get_rate_r = get_rate_r
+grvl.values = vals
+
+local update = {}
+
+do
+    vals.play = { 1, 1 }
+    vals.rate = { 0, 0 }
+    vals.rev_w = { 0, 0 } -- = (v == 0) and 1 or -1
+    vals.oct_w = { 0, 0 }
+    vals.rev_r = { 0, 0 } -- = (v == 0) and 1 or -1
+    vals.oct_r = { 0, 0 }
+    vals.couple = { 1, 1 }
+
+    vals.rate_w = { 1, 1 }
+    vals.rate_r = { 1, 1 }
+
+    function update.rate_w(chan)
+        local play = vals.play[chan]
+        local rate = vals.rate[chan]
+        local rev_w = vals.rev_w[chan]
+        local oct_w = vals.oct_w[chan] 
+        vals.rate_w[chan] = 2^oct_w * 2^rate * rev_w * play
+    end
+    function update.rate_r(chan)
+        local play = vals.play[chan]
+        local rate = vals.rate[chan]
+        local rev_r = vals.rev_r[chan]
+        local oct_r = vals.oct_r[chan]
+        vals.rate_r[chan] = 2^oct_r * 2^rate_r * rev_r * play
+    end
 
     local function position(head, chan, pos) 
         pos = pos or 0
@@ -48,7 +56,7 @@ do
 
     local function tick(chan, buf)
         while buffers[buf].recording[chan] do
-            local r_w = get_rate_w(chan)
+            local r_w = vals.rate_w[chan]
 
             clock.sleep(timer_quant)
             buffers[buf].timer_seconds = buffers[buf].timer_seconds + (timer_quant * r_w)
@@ -60,7 +68,7 @@ do
         buffers[buf].recording[chan] = true
         clock.run(tick, chan, buf)
 
-        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
+        if buf == vals.buf[chan] then
             position('write', chan, 0)
 
             params:set('record_'..chan, 1, silent)
@@ -79,7 +87,7 @@ do
             buffers[buf].duration_seconds = buffers[buf].timer_seconds
         end
         
-        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
+        if buf == vals.buf[chan] then
             position('write', chan, 0)
 
             if buffers[buf].manual then
@@ -88,19 +96,35 @@ do
         end
     end
 
-    --TODO: support sample loading
-    function actions.rate_start_end()
-        for chan = 1,2 do
-            local r_w = get_rate_w(chan)
-            local r_r = get_rate_r(chan)
-            local st_rel = patcher.get_destination_plus_param('loop_start_'..chan) 
-                / time_volt_scale
-            local en_rel = patcher.get_destination_plus_param('loop_end_'..chan) 
-                / time_volt_scale
 
-            local len_rel = math.abs(en_rel - st_rel)
+    vals.st_rel = { 0, 0 } -- = v / time_volt_scale
+    vals.en_rel = { 0, 0 } -- = v / time_volt_scale
+    vals.len_rel = { 0, 0 }
+    vals.buf = { 1, 2 }
+    vals.rec = { 0, 0 }
+    vals.st = { 0, 0 }
+    vals.en = { 0, 0 }
+    vals.couple = { 1, 1 }
+
+    --TODO: split into separate functions whenever possible
+        -- i think start & length can be independent (per-chan)
+        -- i think rate/play can be independent (per-chan)
+        -- buffer, rec, call the other update functions
+        -- couple literally doesn't need to be here
+    function update.rate_start_end()
+        for chan = 1,2 do
+            update.rate_w(chan)
+            update.rate_r(chan)
+            local r_w = vals.rate_w[chan]
+            local r_r = vals.rate_r[chan]
+
+            local st_rel = vals.st_rel[chan]
+            local en_rel = vals.en_rel[chan]
+            vals.len_rel[chan] = math.abs(en_rel - st_rel)
+
+            local len_rel = vals.len_rel[chan]
             
-            local buf = patcher.get_destination_plus_param('buffer_'..chan)
+            local buf = vals.buf[chan]
 
             engine.buf(chan, buf)
 
@@ -113,10 +137,10 @@ do
                 buffers[buf].manual = true
                 punch_out(chan, buf)
 
-                return actions.rate_start_end()
+                return update.rate_start_end()
             end
             
-            local rec = patcher.get_destination_plus_param('record_'..chan)
+            local rec = vals.rec[chan] 
             local should_rec = len_rel > 0 and 1 or 0
                 
             if
@@ -131,7 +155,7 @@ do
                 if rec < 1 then
                     punch_out(chan, buf)
 
-                    return actions.rate_start_end()
+                    return update.rate_start_end()
                 end
             else
                 engine.rec_enable(chan, 0)
@@ -139,11 +163,9 @@ do
                 if rec > 0 then
                     punch_in(chan, buf)
 
-                    return actions.rate_start_end()
+                    return update.rate_start_end()
                 end
             end
-
-            local st, en
 
             if
                 buffers[buf].recorded 
@@ -152,13 +174,14 @@ do
             then
                 local len = buffers[buf].duration_seconds
 
-                st = st_rel * len
-                en = en_rel * len
+                vals.st[chan] = st_rel * len
+                vals.en[chan] = en_rel * len
             else
-                st = 0
-                en = max_seconds
+                vals.st[chan] = 0
+                vals.en[chan] = max_seconds
             end
 
+            local st, en = vals.st[chan], vals.en[chan]
             --TODO: looper-recorded decoupled phases have decoupled start/end
             if st < en then
                 engine.rate_write(chan, r_w)
@@ -177,7 +200,10 @@ do
                 engine.start_minutes_read(chan, en/60)
                 engine.end_minutes_read(chan, st/60)
             end
-            engine.couple_phases(chan, patcher.get_destination_plus_param('couple_'..chan))
+
+            local couple = vals.couple[chan]
+
+            engine.couple_phases(chan, couple)
 
             crops.dirty.grid = true
             crops.dirty.screen = true
@@ -195,12 +221,8 @@ local function clear(buf)
     engine.clear_buf(buf)
 
     for chan = 1,2 do
-        if buf == patcher.get_destination_plus_param('buffer_'..chan) then
-            local len = math.abs(
-                patcher.get_destination_plus_param('loop_end_'..chan) 
-                - patcher.get_destination_plus_param('loop_start_'..chan)
-            )
-
+        if buf == vals.buf[chan] then
+            local len = vals.len_rel[chan]
             if (not buffers[buf].manual) or (len==0) then
                 params:set('record_'..chan, 0, silent)
                 params:set('loop_start_'..chan, 0, silent)
@@ -210,7 +232,7 @@ local function clear(buf)
     end
             
     reset_buffer(buf)
-    actions.rate_start_end()
+    update.rate_start_end()
 end
 
 --add track params
@@ -220,26 +242,31 @@ for chan = 1,2 do
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'record_'..chan, name = 'record', default = 0,
-        action = actions.rate_start_end
+        action = function(v)
+            vals.rec[chan] = v; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'play_'..chan, name = 'play', default = 1,
-        action = actions.rate_start_end
+        action = function(v)
+            vals.play[chan] = v; update.rate_start_end()
+        end
     }
     --TODO: trigger dest
     params:add{
         type = 'binary', behavior = 'trigger',
         id = 'clear_'..chan, name = 'clear',
         action = function()
-            local buf = patcher.get_destination_plus_param('buffer_'..chan)
-            clear(buf)
+            clear(vals.buf[chan])
         end
     }
     add_param_dest{
         type = 'number', id = 'buffer_'..chan, name = 'buffer',
         min = 1, max = 2, default = chan,
-        action = actions.rate_start_end
+        action = function(v)
+            vals.buf[chan] = v; update.rate_start_end()
+        end
     }
     
     --TODO: bitnoise?
@@ -264,11 +291,8 @@ for chan = 1,2 do
     add_param_dest{
         type = 'control', id = 'level_'..chan, name = 'lvl',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
-        action = function()
-            engine.out_amp(
-                chan, 
-                volt_amp(patcher.get_destination_plus_param('level_'..chan))
-            )
+        action = function(v)
+            engine.out_amp(chan, volt_amp(v))
             
             crops.dirty.screen = true
             crops.dirty.arc = true
@@ -277,8 +301,8 @@ for chan = 1,2 do
     add_param_dest{
         type = 'control', id = 'pan_'..chan, name = 'pan',
         controlspec = cs.def{ min = -5, max = 5, default = chan==1 and -4 or 4, units = 'v' },
-        action = function()
-            engine.out_pan(chan, patcher.get_destination_plus_param('pan_'..chan)/5)
+        action = function(v)
+            engine.out_pan(chan, v/5)
 
             crops.dirty.screen = true
             crops.dirty.arc = true
@@ -287,11 +311,8 @@ for chan = 1,2 do
     add_param_dest{
         type = 'control', id = 'old_'..chan, name = 'old',
         controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
-        action = function()
-            engine.feedback_amp(
-                chan, 
-                patcher.get_destination_plus_param('old_'..chan)/5
-            )
+        action = function(v)
+            engine.feedback_amp(chan, v/5)
 
             crops.dirty.screen = true
             crops.dirty.arc = true
@@ -304,64 +325,85 @@ for chan = 1,2 do
             min = -5, max = 5, default = 0,
             quantum = 1/100/10, units = 'v',
         },
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.rate[chan] = v; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_write_'..chan, name = 'reverse (write)',
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.rev_w[chan] = (v == 0) and 1 or -1
+            update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
         min = -3, max = 2, default = 0,
-        action = actions.rate_start_end
+        action = function(v)
+            vals.oct_w[chan] = v; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_read_'..chan, name = 'reverse (read)',
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.rev_r[chan] = (v == 0) and 1 or -1
+            update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
         min = -3, max = 2, default = 0,
-        action = actions.rate_start_end
+        action = function(v)
+            vals.oct_r[chan] = v; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'binary', behavior = 'toggle',
         id = 'couple_'..chan, name = 'read/write couple', default = 1,
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.couple[chan] = v; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'control', id = 'rate_lag_'..chan, name = 'slew',
         controlspec = cs.def{ min = 0, max = 3, default = 0, units = 'v', },
-        action = function()
-            engine.rate_slew(chan, patcher.get_destination_plus_param('rate_lag_'..chan))
+        action = function(v)
+            engine.rate_slew(chan, v)
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
 
     add_param_dest{
         type = 'number', id = 'bit_depth_'..chan, name = 'bits',
         min = 4, max = 9, default = 9,
-        action = function() 
-            engine.bit_depth(chan, patcher.get_destination_plus_param('bit_depth_'..chan))
+        action = function(v)
+            engine.bit_depth(chan, v)
 
             crops.dirty.grid = true
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     add_param_dest{
         type = 'number', id = 'detritus_'..chan, name = 'dtrts',
         min = 1, max = 6, default = 1,
-        action = function() 
-            engine.read_gap(chan, patcher.get_destination_plus_param('detritus_'..chan))
+        action = function(v)
+            engine.read_gap(chan, v)
 
             crops.dirty.grid = true
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     add_param_dest{
         type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
         controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
-        action = function()
-            engine.wet_dry(chan, patcher.get_destination_plus_param('wet_dry_'..chan)/5)
+        action = function(v)
+            engine.wet_dry(chan, v/5)
             
             crops.dirty.screen = true
             crops.dirty.arc = true
@@ -374,7 +416,9 @@ for chan = 1,2 do
             min = 0, max = time_volt_scale, default = 0, units = 'v', 
             quantum = 1/100/2,
         },
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.st_rel[chan] = v / time_volt_scale; update.rate_start_end()
+        end
     }
     add_param_dest{
         type = 'control', id = 'loop_end_'..chan, name = 'end',
@@ -382,7 +426,9 @@ for chan = 1,2 do
             min = 0, max = time_volt_scale, default = 0, units = 'v',
             quantum = 1/100/2,
         },
-        action = actions.rate_start_end,
+        action = function(v)
+            vals.en_rel[chan] = v / time_volt_scale; update.rate_start_end()
+        end
     }
 
     local function volt_cutoff(volt)
@@ -398,49 +444,49 @@ for chan = 1,2 do
     add_param_dest{
         type = 'control', id = 'lowpass_freq_'..chan, name = 'lp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 7, units = 'v' },
-        action = function()
-            engine.lp_freq(
-                chan, 
-                volt_cutoff(patcher.get_destination_plus_param('lowpass_freq_'..chan))
-            )
+        action = function(v)
+            engine.lp_freq(chan, volt_cutoff(v))
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     } 
     add_param_dest{
         type = 'control', id = 'lowpass_q_'..chan, name = 'lp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
-        action = function()
-            engine.lp_q(
-                chan, 
-                volt_q(patcher.get_destination_plus_param('lowpass_q_'..chan))
-            )
+        action = function(v)
+            engine.lp_q(chan, volt_q(v))
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     add_param_dest{
         type = 'control', id = 'highpass_freq_'..chan, name = 'hp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 0, units = 'v' },
-        action = function()
-            engine.hp_freq(
-                chan, 
-                volt_cutoff(patcher.get_destination_plus_param('highpass_freq_'..chan))
-            )
+        action = function(v)
+            engine.hp_freq(chan, volt_cutoff(v))
+            
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     } 
     add_param_dest{
         type = 'control', id = 'highpass_q_'..chan, name = 'hp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
-        action = function()
-            engine.hp_rq(
-                chan, 
-                volt_q(patcher.get_destination_plus_param('highpass_q_'..chan), true)
-            )
+        action = function(v)
+            engine.hp_rq(chan, volt_q(v, true))
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
 
     add_param_dest{
         type = 'control', id = 'pm_freq_'..chan, name = 'pm frq',
         controlspec = cs.def{ min = 0, max = 17, default = 16, units = 'v' },
-        action = function()
-            local hz = (1/5) * 2^patcher.get_destination_plus_param('pm_freq_'..chan)
+        action = function(v)
+            local hz = (1/5) * 2^v
             engine.mod_freq(chan, hz)
 
             crops.dirty.screen = true
@@ -450,8 +496,11 @@ for chan = 1,2 do
     add_param_dest{
         type = 'control', id = 'pm_freq_lag_'..chan, name = 'pm lag',
         controlspec = cs.def{ min = 0, max = 3, default = 0.25, units = 'v' },
-        action = function()
-            engine.mod_freq_slew(chan, patcher.get_destination_plus_param('pm_freq_lag_'..chan))
+        action = function(v)
+            engine.mod_freq_slew(chan, v)
+
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     add_param_dest{
@@ -460,8 +509,8 @@ for chan = 1,2 do
             min = 0, max = 5, default = 0, units = 'v',
             quantum = 1/100/5*2
         },
-        action = function()
-            local depth = patcher.get_destination_plus_param('pm_depth_'..chan) * 40
+        action = function(v)
+            local depth = v * 40
             engine.mod_depth(chan, depth)
 
             crops.dirty.screen = true
@@ -477,24 +526,4 @@ for chan = 1,2 do
             crops.dirty.screen = true
         end
     }
-    -- params:add{
-    --     type = 'option', id = 'silt_dest_'..chan, name = 'silt dest',
-    --     options = { 'read phase', 'write phase', 'filter freq', 'amplitude' }, default = 1,
-    --     action = function(v)
-    --         engine.mod_read_phase(chan, 0)
-    --         engine.mod_write_phase(chan, 0)
-    --         engine.mod_filter_freq(chan, 0)
-    --         engine.mod_out_amp(chan, 0)
-
-    --         if v==1 then
-    --             engine.mod_read_phase(chan, 1)
-    --         elseif v==2 then
-    --             engine.mod_write_phase(chan, 1)
-    --         elseif v==3 then
-    --             engine.mod_filter_freq(chan, 225)
-    --         elseif v==4 then
-    --             engine.mod_out_amp(chan, 1)
-    --         end
-    --     end
-    -- }
 end
