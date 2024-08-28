@@ -115,6 +115,7 @@ local function Channel()
         _bits('bit_depth_'..chan, grvl.active_src, {
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).min,
+            levels = { 0, 15 },
             state = {
                 util.round(grvl.get_param('bit_depth_'..chan)),
                 set_param, 'bit_depth_'..chan
@@ -122,6 +123,7 @@ local function Channel()
         })
         _detritus('detritus_'..chan, grvl.active_src, {
             x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
+            levels = { 0, 15 },
             state = {
                 util.round(grvl.get_param('detritus_'..chan)),
                 set_param, 'detritus_'..chan
@@ -130,6 +132,7 @@ local function Channel()
 
         _start('loop_start_'..chan, grvl.active_src, {
             x = left and 1 or 9, y = 5,
+            levels = { 0, 15 },
             size = 8, min = 0,
             state = {
                 util.round(
@@ -142,6 +145,7 @@ local function Channel()
         })
         _end('loop_end_'..chan, grvl.active_src, {
             x = left and 1 or 9, y = 6,
+            levels = { 0, 15 },
             size = 8, min = 0,
             state = {
                 util.round(
@@ -159,6 +163,7 @@ local function Channel()
         })
         _oct_write('octave_write_'..chan, grvl.active_src, {
             x = left and 2 or 10, y = 7,
+            levels = { 0, 15 },
             size = 6, min = -3,
             state = grvl.of_param('octave_write_'..chan),
         })
@@ -173,6 +178,7 @@ local function Channel()
             })
             _oct_read('octave_'..head..chan, grvl.active_src, {
                 x = left and 2 or 10, y = 8,
+                levels = { 0, 15 },
                 size = 6, min = -3,
                 state = grvl.of_param('octave_'..head..chan),
             })
