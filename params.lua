@@ -16,32 +16,6 @@ grvl.values = vals
 local update = {}
 
 do
-    vals.play = { 1, 1 }
-    vals.rate = { 0, 0 }
-    vals.rev_w = { 0, 0 } -- = (v == 0) and 1 or -1
-    vals.oct_w = { 0, 0 }
-    vals.rev_r = { 0, 0 } -- = (v == 0) and 1 or -1
-    vals.oct_r = { 0, 0 }
-    vals.couple = { 1, 1 }
-
-    vals.rate_w = { 1, 1 }
-    vals.rate_r = { 1, 1 }
-
-    function update.rate_w(chan)
-        local play = vals.play[chan]
-        local rate = vals.rate[chan]
-        local rev_w = vals.rev_w[chan]
-        local oct_w = vals.oct_w[chan] 
-        vals.rate_w[chan] = 2^oct_w * 2^rate * rev_w * play
-    end
-    function update.rate_r(chan)
-        local play = vals.play[chan]
-        local rate = vals.rate[chan]
-        local rev_r = vals.rev_r[chan]
-        local oct_r = vals.oct_r[chan]
-        vals.rate_r[chan] = 2^oct_r * 2^rate * rev_r * play
-    end
-
     local function position(head, chan, pos) 
         pos = pos or 0
 
@@ -108,9 +82,45 @@ do
         crops.dirty.arc = true
     end
 
+    vals.play = { 1, 1 }
+    vals.rate = { 0, 0 }
+    vals.rev_w = { 0, 0 } -- = (v == 0) and 1 or -1
+    vals.oct_w = { 0, 0 }
+    vals.rev_r = { 0, 0 } -- = (v == 0) and 1 or -1
+    vals.oct_r = { 0, 0 }
+    vals.couple = { 1, 1 }
 
+    vals.rate_w = { 1, 1 }
+    vals.rate_r = { 1, 1 }
+
+    --TODO: call when start passes end / vice-versa
+    function update.rate(chan)
+        local play = vals.play[chan]
+        local rate = vals.rate[chan]
+        local rev_w = vals.rev_w[chan]
+        local oct_w = vals.oct_w[chan] 
+        vals.rate_w[chan] = 2^oct_w * 2^rate * rev_w * play
+        
+        local play = vals.play[chan]
+        local rate = vals.rate[chan]
+        local rev_r = vals.rev_r[chan]
+        local oct_r = vals.oct_r[chan]
+        vals.rate_r[chan] = 2^oct_r * 2^rate * rev_r * play
+        
+        local r_w = vals.rate_w[chan]
+        local r_r = vals.rate_r[chan]
+
+        local st, en = vals.st[chan], vals.en[chan]
+        local flip = (st < en) and 1 or -1
+            
+        engine.rate_write(chan, r_w * flip)
+        engine.rate_read(chan, r_r * flip)
+    end
+    
     vals.st_rel = { 0, 0 } -- = v / time_volt_scale
     vals.en_rel = { 0, 0 } -- = v / time_volt_scale
+    vals.last_st_rel = { 0, 0 }
+    vals.last_en_rel = { 0, 0 }
     vals.len_rel = { 0, 0 }
     vals.buf = { 1, 2 }
     vals.rec = { 0, 0 }
@@ -118,24 +128,73 @@ do
     vals.en = { 0, 0 }
     vals.couple = { 1, 1 }
 
+    function update.start_end(chan, silent)
+        local st_rel = vals.st_rel[chan]
+        local en_rel = vals.en_rel[chan]
+        vals.len_rel[chan] = math.abs(en_rel - st_rel)
+            
+        local len_rel = vals.len_rel[chan]
+        
+        local buf = vals.buf[chan]
+        if 
+            len_rel > 0 and (not (
+                buffers[buf].recording[chan]
+                or buffers[buf].recorded 
+                or buffers[buf].manual 
+                or buffers[buf].loaded
+            )) 
+            and (not silent)
+        then
+            return update.buf_rec()
+        end 
+
+        if
+            buffers[buf].recorded 
+            or buffers[buf].manual 
+            or buffers[buf].loaded
+        then
+            local len = buffers[buf].duration_seconds
+
+            vals.st[chan] = st_rel * len
+            vals.en[chan] = en_rel * len
+        else
+            vals.st[chan] = 0
+            vals.en[chan] = max_seconds
+        end
+
+        local st, en = vals.st[chan], vals.en[chan]
+        
+        local flip = (vals.st_rel[chan] < vals.en_rel[chan]) and 1 or -1
+        local flip_last = (vals.last_st_rel[chan] < vals.last_en_rel[chan]) and 1 or -1
+
+        --TODO: looper-recorded decoupled phases have decoupled start/end
+        if flip then
+            engine.start_minutes_write(chan, st/60)
+            engine.end_minutes_write(chan, en/60)
+            engine.start_minutes_read(chan, st/60)
+            engine.end_minutes_read(chan, en/60)
+        else
+            engine.start_minutes_write(chan, en/60)
+            engine.end_minutes_write(chan, st/60)
+            engine.start_minutes_read(chan, en/60)
+            engine.end_minutes_read(chan, st/60)
+        end
+
+        if (flip ~= flip_last) and (not silent) then
+            update.rate(chan)
+        end
+    end
+
     --TODO: split into separate functions whenever possible
         -- i think start & length can be independent (per-chan)
         -- i think rate/play can be independent (per-chan)
         -- buffer, rec, call the other update functions
         -- couple literally doesn't need to be here
-    function update.rate_start_end()
+    function update.buf_rec()
         for chan = 1,2 do
-            update.rate_w(chan)
-            update.rate_r(chan)
-            local r_w = vals.rate_w[chan]
-            local r_r = vals.rate_r[chan]
-
             local st_rel = vals.st_rel[chan]
             local en_rel = vals.en_rel[chan]
-            vals.len_rel[chan] = math.abs(en_rel - st_rel)
-
             local len_rel = vals.len_rel[chan]
-            
             local buf = vals.buf[chan]
 
             engine.buf(chan, buf)
@@ -149,7 +208,7 @@ do
                 buffers[buf].manual = true
                 punch_out(chan, buf)
 
-                update.rate_start_end()
+                update.buf_rec()
             
                 params:lookup_param('loop_start_'..chan):bang()
                 params:lookup_param('loop_end_'..chan):bang()
@@ -173,7 +232,7 @@ do
                 if rec < 1 then
                     punch_out(chan, buf)
 
-                    update.rate_start_end()
+                    update.buf_rec()
                 
                     params:lookup_param('loop_start_'..chan):bang()
                     params:lookup_param('loop_end_'..chan):bang()
@@ -187,47 +246,12 @@ do
                 if rec > 0 then
                     punch_in(chan, buf)
 
-                    return update.rate_start_end()
+                    return update.buf_rec()
                 end
             end
 
-            if
-                buffers[buf].recorded 
-                or buffers[buf].manual 
-                or buffers[buf].loaded
-            then
-                local len = buffers[buf].duration_seconds
-
-                vals.st[chan] = st_rel * len
-                vals.en[chan] = en_rel * len
-            else
-                vals.st[chan] = 0
-                vals.en[chan] = max_seconds
-            end
-
-            local st, en = vals.st[chan], vals.en[chan]
-            --TODO: looper-recorded decoupled phases have decoupled start/end
-            if st < en then
-                engine.rate_write(chan, r_w)
-                engine.rate_read(chan, r_r)
-
-                engine.start_minutes_write(chan, st/60)
-                engine.end_minutes_write(chan, en/60)
-                engine.start_minutes_read(chan, st/60)
-                engine.end_minutes_read(chan, en/60)
-            else
-                engine.rate_write(chan, -r_w)
-                engine.rate_read(chan, -r_r)
-
-                engine.start_minutes_write(chan, en/60)
-                engine.end_minutes_write(chan, st/60)
-                engine.start_minutes_read(chan, en/60)
-                engine.end_minutes_read(chan, st/60)
-            end
-
-            local couple = vals.couple[chan]
-
-            engine.couple_phases(chan, couple)
+            update.start_end(chan, silent)
+            update.rate(chan)
 
             crops.dirty.grid = true
             crops.dirty.screen = true
@@ -254,7 +278,7 @@ local function clear(buf)
     end
             
     reset_buffer(buf)
-    update.rate_start_end()
+    update.buf_rec()
                     
     for chan = 1,2 do
         if buf == vals.buf[chan] then
@@ -273,14 +297,14 @@ for chan = 1,2 do
         type = 'binary', behavior = 'toggle',
         id = 'record_'..chan, name = 'record', default = 0,
         action = function(v)
-            vals.rec[chan] = v; update.rate_start_end()
+            vals.rec[chan] = v; update.buf_rec()
         end
     }
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'play_'..chan, name = 'play', default = 1,
         action = function(v)
-            vals.play[chan] = v; update.rate_start_end()
+            vals.play[chan] = v; update.rate(chan)
         end
     }
     --TODO: trigger dest
@@ -295,7 +319,7 @@ for chan = 1,2 do
         type = 'number', id = 'buffer_'..chan, name = 'buffer',
         min = 1, max = 2, default = chan,
         action = function(v)
-            vals.buf[chan] = v; update.rate_start_end()
+            vals.buf[chan] = v; update.buf_rec()
         end
     }
     
@@ -356,7 +380,7 @@ for chan = 1,2 do
             quantum = 1/100/10, units = 'v',
         },
         action = function(v)
-            vals.rate[chan] = v; update.rate_start_end()
+            vals.rate[chan] = v; update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
@@ -364,14 +388,14 @@ for chan = 1,2 do
         id = 'reverse_write_'..chan, name = 'reverse (write)',
         action = function(v)
             vals.rev_w[chan] = (v == 0) and 1 or -1
-            update.rate_start_end()
+            update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
         type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
         min = -3, max = 2, default = 0,
         action = function(v)
-            vals.oct_w[chan] = v; update.rate_start_end()
+            vals.oct_w[chan] = v; update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
@@ -379,21 +403,27 @@ for chan = 1,2 do
         id = 'reverse_read_'..chan, name = 'reverse (read)',
         action = function(v)
             vals.rev_r[chan] = (v == 0) and 1 or -1
-            update.rate_start_end()
+            update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
         type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
         min = -3, max = 2, default = 0,
         action = function(v)
-            vals.oct_r[chan] = v; update.rate_start_end()
+            vals.oct_r[chan] = v; update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'couple_'..chan, name = 'read/write couple', default = 1,
         action = function(v)
-            vals.couple[chan] = v; update.rate_start_end()
+            vals.couple[chan] = v
+            
+            engine.couple_phases(chan, v)
+
+            crops.dirty.grid = true
+            crops.dirty.screen = true
+            crops.dirty.arc = true
         end
     }
     patcher.add_destination_and_param{
@@ -447,7 +477,8 @@ for chan = 1,2 do
             quantum = 1/100/2,
         },
         action = function(v)
-            vals.st_rel[chan] = v / time_volt_scale; update.rate_start_end()
+            vals.last_st_rel[chan] = vals.st_rel[chan]
+            vals.st_rel[chan] = v / time_volt_scale; update.start_end(chan)
         end
     }
     patcher.add_destination_and_param{
@@ -457,7 +488,8 @@ for chan = 1,2 do
             quantum = 1/100/2,
         },
         action = function(v)
-            vals.en_rel[chan] = v / time_volt_scale; update.rate_start_end()
+            vals.last_en_rel[chan] = vals.en_rel[chan]
+            vals.en_rel[chan] = v / time_volt_scale; update.start_end(chan)
         end
     }
 
