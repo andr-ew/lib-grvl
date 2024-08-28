@@ -39,7 +39,7 @@ do
         local rate = vals.rate[chan]
         local rev_r = vals.rev_r[chan]
         local oct_r = vals.oct_r[chan]
-        vals.rate_r[chan] = 2^oct_r * 2^rate_r * rev_r * play
+        vals.rate_r[chan] = 2^oct_r * 2^rate * rev_r * play
     end
 
     local function position(head, chan, pos) 

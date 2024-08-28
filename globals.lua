@@ -45,7 +45,7 @@ end
 
 function grvl.of_param(id, is_dest)
     return {
-        grvl.get_param(id, is_dest)
+        grvl.get_param(id, is_dest),
         grvl.set_param, id,
     }            
 end
