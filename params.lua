@@ -72,10 +72,17 @@ do
             position('write', chan, 0)
 
             params:set('record_'..chan, 1, silent)
+            vals.rec[chan] = 1
 
             params:set('loop_start_'..chan, 0, silent)
             params:set('loop_end_'..chan, time_volt_scale, silent)
+            vals.st_rel[chan] = 0
+            vals.en_rel[chan] = 1
         end
+            
+        crops.dirty.grid = true
+        crops.dirty.screen = true
+        crops.dirty.arc = true
     end
     local function punch_out(chan, buf)
         buffers[buf].recording[chan] = false --this line stops the clock
@@ -92,8 +99,13 @@ do
 
             if buffers[buf].manual then
                 params:set('record_'..chan, 1, silent)
+                vals.rec[chan] = 1
             end
         end
+
+        crops.dirty.grid = true
+        crops.dirty.screen = true
+        crops.dirty.arc = true
     end
 
 
@@ -155,7 +167,12 @@ do
                 if rec < 1 then
                     punch_out(chan, buf)
 
-                    return update.rate_start_end()
+                    update.rate_start_end()
+                
+                    params:lookup_param('loop_start_'..chan):bang()
+                    params:lookup_param('loop_end_'..chan):bang()
+
+                    return
                 end
             else
                 engine.rec_enable(chan, 0)
@@ -222,6 +239,9 @@ local function clear(buf)
                 params:set('record_'..chan, 0, silent)
                 params:set('loop_start_'..chan, 0, silent)
                 params:set('loop_end_'..chan, 0, silent)
+                vals.rec[chan] = 0
+                vals.st_rel[chan] = 0
+                vals.en_rel[chan] = 0
             end
         end
     end
