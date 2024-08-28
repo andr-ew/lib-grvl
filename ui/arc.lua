@@ -104,7 +104,7 @@ for i,window_thing in ipairs{ 'start', 'end' } do
                     state = grvl.of_param(id),
                 }
             elseif crops.mode == 'redraw' then
-                local buf = patcher.get_destination_plus_param('buffer_'..chan)
+                local buf = grvl.get_param('buffer_'..chan)
                 local ph = buffers[buf].phase_seconds
                 local dur = buffers[buf].duration_seconds
                 local show_phase = (
@@ -122,11 +122,11 @@ for i,window_thing in ipairs{ 'start', 'end' } do
                     level_en = is_start and 4 or 15,
                     level_ph = 4,
                     st = (
-                        patcher.get_destination_plus_param('loop_start_'..chan)
+                        grvl.get_param('loop_start_'..chan)
                         / grvl.time_volt_scale
                     ),
                     en = (
-                        patcher.get_destination_plus_param('loop_end_'..chan) 
+                        grvl.get_param('loop_end_'..chan) 
                         / grvl.time_volt_scale
                     ),
                 }

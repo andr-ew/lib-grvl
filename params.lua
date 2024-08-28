@@ -212,11 +212,6 @@ do
     end
 end
 
-local function add_param_dest(args)
-    params:add(args)
-    patcher.add_destination(args.id, args.action)
-end
-    
 local function clear(buf)
     engine.clear_buf(buf)
 
@@ -239,14 +234,14 @@ end
 for chan = 1,2 do
     params:add_separator('channel '..chan)
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'record_'..chan, name = 'record', default = 0,
         action = function(v)
             vals.rec[chan] = v; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'play_'..chan, name = 'play', default = 1,
         action = function(v)
@@ -261,7 +256,7 @@ for chan = 1,2 do
             clear(vals.buf[chan])
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'number', id = 'buffer_'..chan, name = 'buffer',
         min = 1, max = 2, default = chan,
         action = function(v)
@@ -288,7 +283,7 @@ for chan = 1,2 do
         return amp
     end
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'level_'..chan, name = 'lvl',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = function(v)
@@ -298,7 +293,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'pan_'..chan, name = 'pan',
         controlspec = cs.def{ min = -5, max = 5, default = chan==1 and -4 or 4, units = 'v' },
         action = function(v)
@@ -308,7 +303,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'old_'..chan, name = 'old',
         controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
         action = function(v)
@@ -319,7 +314,7 @@ for chan = 1,2 do
         end
     }
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'rate_'..chan, name = 'rate',
         controlspec = cs.def{ 
             min = -5, max = 5, default = 0,
@@ -329,7 +324,7 @@ for chan = 1,2 do
             vals.rate[chan] = v; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_write_'..chan, name = 'reverse (write)',
         action = function(v)
@@ -337,14 +332,14 @@ for chan = 1,2 do
             update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
         min = -3, max = 2, default = 0,
         action = function(v)
             vals.oct_w[chan] = v; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_read_'..chan, name = 'reverse (read)',
         action = function(v)
@@ -352,21 +347,21 @@ for chan = 1,2 do
             update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
         min = -3, max = 2, default = 0,
         action = function(v)
             vals.oct_r[chan] = v; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'couple_'..chan, name = 'read/write couple', default = 1,
         action = function(v)
             vals.couple[chan] = v; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'rate_lag_'..chan, name = 'slew',
         controlspec = cs.def{ min = 0, max = 3, default = 0, units = 'v', },
         action = function(v)
@@ -377,7 +372,7 @@ for chan = 1,2 do
         end
     }
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'number', id = 'bit_depth_'..chan, name = 'bits',
         min = 4, max = 9, default = 9,
         action = function(v)
@@ -388,7 +383,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'number', id = 'detritus_'..chan, name = 'dtrts',
         min = 1, max = 6, default = 1,
         action = function(v)
@@ -399,7 +394,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
         controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
         action = function(v)
@@ -410,7 +405,7 @@ for chan = 1,2 do
         end
     }
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'loop_start_'..chan, name = 'start',
         controlspec = cs.def{ 
             min = 0, max = time_volt_scale, default = 0, units = 'v', 
@@ -420,7 +415,7 @@ for chan = 1,2 do
             vals.st_rel[chan] = v / time_volt_scale; update.rate_start_end()
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'loop_end_'..chan, name = 'end',
         controlspec = cs.def{ 
             min = 0, max = time_volt_scale, default = 0, units = 'v',
@@ -441,7 +436,7 @@ for chan = 1,2 do
         return util.linexp(0, 1, 0.01, 1.5, (inverse and (5 - volt) or volt) / 5)
     end
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'lowpass_freq_'..chan, name = 'lp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 7, units = 'v' },
         action = function(v)
@@ -451,7 +446,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     } 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'lowpass_q_'..chan, name = 'lp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
         action = function(v)
@@ -461,7 +456,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'highpass_freq_'..chan, name = 'hp cut',
         controlspec = cs.def{ min = 0, max = 7, default = 0, units = 'v' },
         action = function(v)
@@ -471,7 +466,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     } 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'highpass_q_'..chan, name = 'hp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
         action = function(v)
@@ -482,7 +477,7 @@ for chan = 1,2 do
         end
     }
 
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'pm_freq_'..chan, name = 'pm frq',
         controlspec = cs.def{ min = 0, max = 17, default = 16, units = 'v' },
         action = function(v)
@@ -493,7 +488,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'pm_freq_lag_'..chan, name = 'pm lag',
         controlspec = cs.def{ min = 0, max = 3, default = 0.25, units = 'v' },
         action = function(v)
@@ -503,7 +498,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    add_param_dest{
+    patcher.add_destination_and_param{
         type = 'control', id = 'pm_depth_'..chan, name = 'pm dep',
         controlspec = cs.def{ 
             min = 0, max = 5, default = 0, units = 'v',

@@ -52,12 +52,12 @@ local function Channel()
 
         if crops.device == 'grid' and crops.mode == 'redraw' then
             local g = crops.handler
-            local buf = patcher.get_destination_plus_param('buffer_'..chan)
+            local buf = grvl.get_param('buffer_'..chan)
 
             --draw end
             do
                 local x = (left and 1 or 9) + util.round(
-                    (patcher.get_destination_plus_param('loop_end_'..chan) / time_max) * 7
+                    (grvl.get_param('loop_end_'..chan) / time_max) * 7
                 )
                 g:led(x, 5, 4)
             end
@@ -116,14 +116,14 @@ local function Channel()
             x = left and 1 or 11, y = 4, size = 6, 
             min = params:lookup_param('bit_depth_'..chan).min,
             state = {
-                util.round(patcher.get_destination_plus_param('bit_depth_'..chan)),
+                util.round(grvl.get_param('bit_depth_'..chan)),
                 set_param, 'bit_depth_'..chan
             }
         })
         _detritus('detritus_'..chan, grvl.active_src, {
             x = (left and 1 or 11) + 6 - 1, y = 3, size = 6, flow = 'left',
             state = {
-                util.round(patcher.get_destination_plus_param('detritus_'..chan)),
+                util.round(grvl.get_param('detritus_'..chan)),
                 set_param, 'detritus_'..chan
             }
         })
@@ -133,7 +133,7 @@ local function Channel()
             size = 8, min = 0,
             state = {
                 util.round(
-                    (patcher.get_destination_plus_param('loop_start_'..chan) / time_max) * 7
+                    (grvl.get_param('loop_start_'..chan) / time_max) * 7
                 ),
                 function(v)
                     set_param('loop_start_'..chan, (v/7) * time_max)
@@ -145,7 +145,7 @@ local function Channel()
             size = 8, min = 0,
             state = {
                 util.round(
-                    (patcher.get_destination_plus_param('loop_end_'..chan) / time_max) * 7
+                    (grvl.get_param('loop_end_'..chan) / time_max) * 7
                 ),
                 function(v)
                     set_param('loop_end_'..chan, (v/7) * time_max)
@@ -164,7 +164,7 @@ local function Channel()
         })
         do
             local head = (
-                patcher.get_destination_plus_param('couple_'..chan) > 0
+               grvl.get_param('couple_'..chan) > 0
             ) and 'write_' or 'read_'
             _reverse_read('reverse_'..head..chan, grvl.active_src, {
                 x = left and 1 or 9, y = 8,
