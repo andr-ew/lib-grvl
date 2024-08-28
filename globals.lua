@@ -35,12 +35,17 @@ grvl.set_param = function(id, v)
     process_param(t)
     for i,pat in ipairs(patterns) do pat:watch(t) end
 end
+grvl.get_param = function(id, is_dest)
+    return (
+        (is_dest==false or crops.mode=='input') 
+            and params:get(id) 
+            or patcher.get_value(id)
+   )
+end
 
 function grvl.of_param(id, is_dest)
     return {
-        (is_dest==false or crops.mode=='input') 
-            and params:get(id) 
-            or patcher.get_destination_plus_param(id),
+        grvl.get_param(id, is_dest),
         grvl.set_param, id,
     }            
 end
