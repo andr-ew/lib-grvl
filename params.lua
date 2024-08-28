@@ -143,7 +143,7 @@ do
                 or buffers[buf].manual 
                 or buffers[buf].loaded
             )) 
-            and (not silent)
+            -- and (not silent)
         then
             return update.buf_rec()
         end 
@@ -185,15 +185,12 @@ do
         end
     end
 
-    --TODO: split into separate functions whenever possible
-        -- i think start & length can be independent (per-chan)
-        -- i think rate/play can be independent (per-chan)
-        -- buffer, rec, call the other update functions
-        -- couple literally doesn't need to be here
     function update.buf_rec()
         for chan = 1,2 do
             local st_rel = vals.st_rel[chan]
             local en_rel = vals.en_rel[chan]
+            vals.len_rel[chan] = math.abs(en_rel - st_rel)
+                
             local len_rel = vals.len_rel[chan]
             local buf = vals.buf[chan]
 
@@ -246,7 +243,13 @@ do
                 if rec > 0 then
                     punch_in(chan, buf)
 
-                    return update.buf_rec()
+                    update.buf_rec()
+                
+                    params:lookup_param('loop_start_'..chan):bang()
+                    params:lookup_param('loop_end_'..chan):bang()
+                    params:lookup_param('record_'..chan):bang()
+
+                    return
                 end
             end
 
