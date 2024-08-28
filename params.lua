@@ -149,7 +149,13 @@ do
                 buffers[buf].manual = true
                 punch_out(chan, buf)
 
-                return update.rate_start_end()
+                update.rate_start_end()
+            
+                params:lookup_param('loop_start_'..chan):bang()
+                params:lookup_param('loop_end_'..chan):bang()
+                params:lookup_param('record_'..chan):bang()
+
+                return
             end
             
             local rec = vals.rec[chan] 
@@ -171,6 +177,7 @@ do
                 
                     params:lookup_param('loop_start_'..chan):bang()
                     params:lookup_param('loop_end_'..chan):bang()
+                    params:lookup_param('record_'..chan):bang()
 
                     return
                 end
@@ -248,6 +255,14 @@ local function clear(buf)
             
     reset_buffer(buf)
     update.rate_start_end()
+                    
+    for chan = 1,2 do
+        if buf == vals.buf[chan] then
+            params:lookup_param('loop_start_'..chan):bang()
+            params:lookup_param('loop_end_'..chan):bang()
+            params:lookup_param('record_'..chan):bang()
+        end
+    end
 end
 
 --add track params
