@@ -598,10 +598,11 @@ for i = 1,2 do
     mod_src.lfos[i]:add_params('lfo_'..i)
 end
 
+--add screen/arc mapping params
 do
-    params:add_separator('sep_mappings', 'mappings')
+    params:add_separator('sep_mappings', 'enc/arc mappings')
 
-    grvl.map_ids = {}
+    -- grvl.map_ids = {}
     grvl.map_names = {}
     grvl.map_prefixes = {}
 
@@ -617,12 +618,47 @@ do
                 local id = p.id
                 local prefix = string.sub(id, 1, -2)
 
-                table.insert(grvl.map_names, p.name or p.id)
-                table.insert(grvl.map_ids, id)
-                table.insert(grvl.map_prefixes, prefix)
+                -- table.insert(grvl.map_ids, id)
+                
+                if not tab.contains(grvl.map_prefixes, prefix) then
+                    table.insert(grvl.map_names, p.name or p.id)
+                    table.insert(grvl.map_prefixes, prefix)
+                end
             end
         elseif p.id == id_start then
             adding = true
         end
+    end
+
+    local spaces = '      '
+    local src_names = {
+        'R1 C1'..spaces,
+        spaces..'R1 C2',
+        'R2 C1'..spaces,
+        spaces..'R2 C2',
+        'R3 C1'..spaces,
+        spaces..'R3 C2',
+        'R4 C1'..spaces,
+        spaces..'R4 C2',
+    }
+
+    for i = 1,8 do
+        local x1 = (i - 1)%2 + 1
+        local x2 = x1 + 2
+        local y = (i - 1)//2 + 1
+
+        params:add{
+            type = 'option', id = 'map_src_'..i, name = src_names[i],
+            options = grvl.map_names, default = tab.key(grvl.map_prefixes, grvl.map[y][x1]),
+            action = function(v)
+                local prefix = grvl.map_prefixes[v]
+
+                grvl.map[y][x1] = prefix
+                grvl.map[y][x2] = prefix
+            
+                crops.dirty.screen = true
+                crops.dirty.arc = true
+            end
+        }
     end
 end

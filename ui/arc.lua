@@ -188,23 +188,28 @@ Generic_destinations['control'] = function()
 end
 
 Generic_destinations['number'] = function()
-    local _ctl = Arc.control()
+    local _int = Arc.integer()
+    local xx = { 42 - 4, 56 }
 
     return function(props) 
         local id = props.id
         local chan = props.chan
         local p = params:lookup_param(id)
-        local quant = (1/(p.max - p.min))
 
-        _ctl{
+        _int{
             n = props.n,
-            sensitivity = quant*100, 
-            controlspec = cs.def{ 
-                min = p.min, max = p.max, quantum = quant, wrap = p.wrap 
-            },
+            sensitivity = 0.5, 
+            min = p.min or 1,
+            max = p.max,
+            size = 2,
+            -- sensitivity = 1,
+            cycle = 64,
+            -- indicator = 1,
+            x = xx,
+            -- x = { 1, 64 },
             state = grvl.of_param(id),
-            levels = { 0, props.levels[1], props.levels[2] },
-        }
+            levels = { 0, props.levels[2] }
+    }
     end
 end
 
