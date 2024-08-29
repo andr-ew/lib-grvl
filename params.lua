@@ -294,7 +294,7 @@ end
 
 --add track params
 for chan = 1,2 do
-    params:add_separator('channel '..chan)
+    params:add_separator('sep_chan_'..chan,'channel '..chan)
 
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
@@ -591,4 +591,38 @@ for chan = 1,2 do
             crops.dirty.screen = true
         end
     }
+end
+--add LFO params
+for i = 1,2 do
+    params:add_separator('lfo '..i)
+    mod_src.lfos[i]:add_params('lfo_'..i)
+end
+
+do
+    params:add_separator('sep_mappings', 'mappings')
+
+    grvl.map_ids = {}
+    grvl.map_names = {}
+    grvl.map_prefixes = {}
+
+    local adding = false
+    local id_start = 'sep_chan_1'
+    local id_end = 'sep_mappings'
+
+    for ii,p in ipairs(params.params) do
+        if adding then
+            if p.id == id_end then
+                adding = false
+            elseif p.t == params.tCONTROL or p.t == params.tNUMBER then
+                local id = p.id
+                local prefix = string.sub(id, 1, -2)
+
+                table.insert(grvl.map_names, p.name or p.id)
+                table.insert(grvl.map_ids, id)
+                table.insert(grvl.map_prefixes, prefix)
+            end
+        elseif p.id == id_start then
+            adding = true
+        end
+    end
 end

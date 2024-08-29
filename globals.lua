@@ -36,11 +36,12 @@ grvl.set_param = function(id, v)
     for i,pat in ipairs(patterns) do pat:watch(t) end
 end
 grvl.get_param = function(id, is_dest)
+    local getter = patcher.dest_getters[id]
     return (
-        (is_dest==false or crops.mode=='input') 
+        (is_dest==false or crops.mode=='input' or (not getter)) 
             and params:get(id) 
-            or patcher.get_value(id)
-   )
+            or getter()
+    )
 end
 
 function grvl.of_param(id, is_dest)
@@ -59,3 +60,11 @@ grvl.arc_focus = {
     { 0, 0, 0, 0 },
 }
 grvl.norns_focus = 1
+
+grvl.map = { 
+    { 'level_',      'old_',      'level_',      'old_'      },
+    { 'pm_freq_',    'pm_depth_', 'pm_freq_',    'pm_depth_' },
+    { 'loop_start_', 'loop_end_', 'loop_start_', 'loop_end_' },
+    { 'loop_end_',   'rate_',     'loop_end_',   'rate_'     }
+}
+

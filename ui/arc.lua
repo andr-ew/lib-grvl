@@ -2,13 +2,12 @@ local buffers = grvl.buffers
 
 local Destinations = {}
 
-Destinations['level_'] = function(prefix)
+Destinations['level_'] = function()
     local _lvl = Arc.control()
     local _fill = Arc.control()
 
     return function(props) 
-        local chan = props.chan
-        local id = prefix..chan
+        local id = props.id
         local xx = { 42 - 4, 42 + 16 + 3 }
         local spec = params:lookup_param(id).controlspec
 
@@ -38,8 +37,7 @@ Destinations['old_'] = function(prefix)
     local _old = Arc.control()
 
     return function(props) 
-        local chan = props.chan
-        local id = prefix..chan
+        local id = props.id
         local spec = params:lookup_param(id).controlspec
         local xx = { 42 - 4, 56 }
 
@@ -59,8 +57,7 @@ Destinations['pm_freq_'] = function(prefix)
     local _mark = Arc.control()
 
     return function(props) 
-        local chan = props.chan
-        local id = prefix..chan
+        local id = props.id
         local spec = params:lookup_param(id).controlspec
         local xx = { 42, 41 }
 
@@ -92,8 +89,8 @@ for i,window_thing in ipairs{ 'start', 'end' } do
         local _win = { enc = Arc.control(), ring = Components.arc.window() }
 
         return function(props)
+            local id = props.id
             local chan = props.chan
-            local id = prefix..chan
             local spec = params:lookup_param(id).controlspec
 
             if crops.mode == 'input' then
@@ -135,8 +132,8 @@ for i,window_thing in ipairs{ 'start', 'end' } do
     end
 end
 
-Destinations['rate_'] = function(prefix)
-    local spec = params:lookup_param(prefix..1).controlspec
+Destinations['rate_'] = function()
+    local spec = params:lookup_param('rate_1').controlspec
 
     local _rate = Arc.control()
     local _marks = {}
@@ -145,8 +142,8 @@ Destinations['rate_'] = function(prefix)
     end
 
     return function(props) 
+        local id = props.id
         local chan = props.chan
-        local id = prefix..chan
         local xx = { 64 - (5*5) + 1 , 5*5 + 1 }
 
         if crops.mode == 'redraw' then for i = spec.minval, spec.maxval do
@@ -170,12 +167,14 @@ Destinations['rate_'] = function(prefix)
     end
 end
 
-Destinations['other'] = function(prefix)
+local Generic_destinations = {}
+
+Generic_destinations['control'] = function()
     local _ctl = Arc.control()
 
     return function(props) 
+        local id = props.id
         local chan = props.chan
-        local id = prefix..chan
         local spec = params:lookup_param(id).controlspec
 
         _ctl{
@@ -188,29 +187,62 @@ Destinations['other'] = function(prefix)
     end
 end
 
+Generic_destinations['number'] = function()
+    local _ctl = Arc.control()
+
+    return function(props) 
+        local id = props.id
+        local chan = props.chan
+        local p = params:lookup_param(id)
+        local quant = (1/(p.max - p.min))
+
+        _ctl{
+            n = props.n,
+            sensitivity = quant*100, 
+            controlspec = cs.def{ 
+                min = p.min, max = p.max, quantum = quant, wrap = p.wrap 
+            },
+            state = grvl.of_param(id),
+            levels = { 0, props.levels[1], props.levels[2] },
+        }
+    end
+end
+
 local function App(args)
-    local map = args.map
     local rotated = args.rotated
 
-    local _params = {}
+    local _destinations = {}
+    for prefix,Destination in pairs(Destinations) do
+        _destinations[prefix] = Patcher.arc.destination(Destination())
+    end
+
+    local _generic_destinations = {}
     for y = 1,4 do
-        _params[y] = {}
+        _generic_destinations[y] = {}
         for x = 1,4 do
-            local Destination = Destinations[map[y][x]]
-            if Destination then
-                _params[y][x] = Patcher.arc.destination(Destination(map[y][x], x, y))
-            elseif map[y][x] then
-                _params[y][x] = Patcher.arc.destination(Destinations['other'](map[y][x], x, y))
+            _generic_destinations[y][x] = {}
+
+            for typ,Destination in pairs(Generic_destinations) do
+                _generic_destinations[y][x][typ] = Patcher.arc.destination(Destination())
             end
         end
     end
 
     return function()
-        for y = 1,4 do for x = 1,4 do
-            if grvl.arc_focus[y][x] > 0 and _params[y][x] then
-                local chan = grvl.grid_focus[(x <3) and 'left' or 'right'] 
+        local map = grvl.map
 
-                _params[y][x](map[y][x]..chan, grvl.active_src, {
+        for y = 1,4 do for x = 1,4 do
+            if grvl.arc_focus[y][x] > 0 then
+                local prefix = map[y][x]
+                local chan = grvl.grid_focus[(x <3) and 'left' or 'right'] 
+                local id = prefix..chan
+                local p = params:lookup_param(id)
+                local typ = p.controlspec and 'control' or 'number'
+
+                local _destination = _destinations[prefix] or _generic_destinations[y][x][typ]
+
+                _destination(id, grvl.active_src, {
+                    id = id,
                     n = tonumber(grvl.arc_vertical and y or x),
                     rotated = rotated,
                     chan = chan,
