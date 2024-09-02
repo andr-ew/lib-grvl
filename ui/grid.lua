@@ -41,8 +41,8 @@ local function Channel()
     local _oct_write = Patcher.grid.destination(Grid.integer())
     local _reverse_read = Patcher.grid.destination(Grid.toggle())
     local _oct_read = Patcher.grid.destination(Grid.integer())
-    local _couple1 = Patcher.grid.destination(Grid.toggle())
-    local _couple2 = Patcher.grid.destination(Grid.toggle())
+    -- local _couple1 = Patcher.grid.destination(Grid.toggle())
+    -- local _couple2 = Patcher.grid.destination(Grid.toggle())
 
     local time_max = params:lookup_param('loop_end_1').controlspec.maxval
 
@@ -164,7 +164,7 @@ local function Channel()
         _oct_write('octave_write_'..chan, grvl.active_src, {
             x = left and 2 or 10, y = 7,
             levels = { 0, 15 },
-            size = 6, min = -3,
+            size = 7, min = -3,
             state = grvl.of_param('octave_write_'..chan),
         })
         do
@@ -179,20 +179,20 @@ local function Channel()
             _oct_read('octave_'..head..chan, grvl.active_src, {
                 x = left and 2 or 10, y = 8,
                 levels = { 0, 15 },
-                size = 6, min = -3,
+                size = 7, min = -3,
                 state = grvl.of_param('octave_'..head..chan),
             })
         end
-        _couple1('couple_'..chan, grvl.active_src, {
-            x = left and 8 or 16, y = 7,
-            levels = { 4, 15 },
-            state = grvl.of_param('couple_'..chan),
-        })
-        _couple2('couple_'..chan, grvl.active_src, {
-            x = left and 8 or 16, y = 8,
-            levels = { 4, 15 },
-            state = grvl.of_param('couple_'..chan),
-        })
+        -- _couple1('couple_'..chan, grvl.active_src, {
+        --     x = left and 8 or 16, y = 7,
+        --     levels = { 4, 15 },
+        --     state = grvl.of_param('couple_'..chan),
+        -- })
+        -- _couple2('couple_'..chan, grvl.active_src, {
+        --     x = left and 8 or 16, y = 8,
+        --     levels = { 4, 15 },
+        --     state = grvl.of_param('couple_'..chan),
+        -- })
     end
 end
 

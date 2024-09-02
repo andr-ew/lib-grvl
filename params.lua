@@ -392,6 +392,17 @@ for chan = 1,2 do
     }
     nicknames['abrasion (fine)'] = 'FINE'
     patcher.add_destination_and_param{
+        type = 'number', id = 'octave_write_'..chan, name = 'abrasion (coarse)',
+        min = -3, max = 3, default = 0,
+        action = function(v)
+            vals.oct_w[chan] = v; update.rate(chan)
+        end,
+        formatter = function(p)
+            return 2^p:get()
+        end
+    }
+    nicknames['abrasion (coarse)'] = 'ABRSN'
+    patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_write_'..chan, name = 'flow',
         action = function(v)
@@ -400,26 +411,18 @@ for chan = 1,2 do
         end
     }
     patcher.add_destination_and_param{
-        type = 'number', id = 'octave_write_'..chan, name = 'abrasion (coarse)',
-        min = -3, max = 2, default = 0,
+        type = 'number', id = 'octave_read_'..chan, name = 'abrasion (readonly)',
+        min = -3, max = 3, default = 0,
         action = function(v)
-            vals.oct_w[chan] = v; update.rate(chan)
+            vals.oct_r[chan] = v; update.rate(chan)
         end
     }
-    nicknames['abrasion (coarse)'] = 'ABRSN'
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'reverse_read_'..chan, name = 'flow (readonly)',
         action = function(v)
             vals.rev_r[chan] = (v == 0) and 1 or -1
             update.rate(chan)
-        end
-    }
-    patcher.add_destination_and_param{
-        type = 'number', id = 'octave_read_'..chan, name = 'abrasion (readonly)',
-        min = -3, max = 2, default = 0,
-        action = function(v)
-            vals.oct_r[chan] = v; update.rate(chan)
         end
     }
     nicknames['abrasion (readonly)'] = 'READ'
