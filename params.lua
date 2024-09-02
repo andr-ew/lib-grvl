@@ -15,6 +15,9 @@ grvl.values = vals
 
 local update = {}
 
+local nicknames = {}
+grvl.param_nicknames = nicknames
+
 do
     local function position(head, chan, pos) 
         pos = pos or 0
@@ -346,7 +349,7 @@ for chan = 1,2 do
     end
 
     patcher.add_destination_and_param{
-        type = 'control', id = 'level_'..chan, name = 'lvl',
+        type = 'control', id = 'level_'..chan, name = 'level',
         controlspec = cs.def{ min = 0, max = 5, default = 4, units = 'v' },
         action = function(v)
             engine.out_amp(chan, volt_amp(v))
@@ -366,7 +369,7 @@ for chan = 1,2 do
         end
     }
     patcher.add_destination_and_param{
-        type = 'control', id = 'old_'..chan, name = 'old',
+        type = 'control', id = 'old_'..chan, name = 'ablation',
         controlspec = cs.def{ min = 0, max = 5, default = 5/2, units = 'v' }, 
         action = function(v)
             engine.feedback_amp(chan, v/5)
@@ -375,9 +378,10 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
+    nicknames['ablation'] = 'ABLTN'
 
     patcher.add_destination_and_param{
-        type = 'control', id = 'rate_'..chan, name = 'rate',
+        type = 'control', id = 'rate_'..chan, name = 'abrasion (fine)',
         controlspec = cs.def{ 
             min = -5, max = 5, default = 0,
             quantum = 1/100/10, units = 'v',
@@ -386,36 +390,39 @@ for chan = 1,2 do
             vals.rate[chan] = v; update.rate(chan)
         end
     }
+    nicknames['abrasion (fine)'] = 'FINE'
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
-        id = 'reverse_write_'..chan, name = 'reverse (write)',
+        id = 'reverse_write_'..chan, name = 'flow',
         action = function(v)
             vals.rev_w[chan] = (v == 0) and 1 or -1
             update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
-        type = 'number', id = 'octave_write_'..chan, name = 'octave (write)',
+        type = 'number', id = 'octave_write_'..chan, name = 'abrasion (coarse)',
         min = -3, max = 2, default = 0,
         action = function(v)
             vals.oct_w[chan] = v; update.rate(chan)
         end
     }
+    nicknames['abrasion (coarse)'] = 'ABRSN'
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
-        id = 'reverse_read_'..chan, name = 'reverse (read)',
+        id = 'reverse_read_'..chan, name = 'flow (readonly)',
         action = function(v)
             vals.rev_r[chan] = (v == 0) and 1 or -1
             update.rate(chan)
         end
     }
     patcher.add_destination_and_param{
-        type = 'number', id = 'octave_read_'..chan, name = 'octave (read)',
+        type = 'number', id = 'octave_read_'..chan, name = 'abrasion (readonly)',
         min = -3, max = 2, default = 0,
         action = function(v)
             vals.oct_r[chan] = v; update.rate(chan)
         end
     }
+    nicknames['abrasion (readonly)'] = 'READ'
     patcher.add_destination_and_param{
         type = 'binary', behavior = 'toggle',
         id = 'couple_'..chan, name = 'read/write couple', default = 1,
@@ -441,7 +448,7 @@ for chan = 1,2 do
     }
 
     patcher.add_destination_and_param{
-        type = 'number', id = 'bit_depth_'..chan, name = 'bits',
+        type = 'number', id = 'bit_depth_'..chan, name = 'sediment',
         min = 4, max = 9, default = 9,
         action = function(v)
             engine.bit_depth(chan, v)
@@ -451,8 +458,9 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
+    nicknames['sediment'] = 'SEDMT'
     patcher.add_destination_and_param{
-        type = 'number', id = 'detritus_'..chan, name = 'dtrts',
+        type = 'number', id = 'detritus_'..chan, name = 'detritus',
         min = 1, max = 6, default = 1,
         action = function(v)
             engine.read_gap(chan, v)
@@ -462,6 +470,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
+    nicknames['detritus'] = 'dtrts'
     patcher.add_destination_and_param{
         type = 'control', id = 'wet_dry_'..chan, name = 'wet/dry',
         controlspec = cs.def{ min = 0, max = 5, default = 2.5, units = 'v' },
@@ -472,6 +481,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
+    nicknames['wet/dry'] = 'WET/D'
 
     patcher.add_destination_and_param{
         type = 'control', id = 'loop_start_'..chan, name = 'start',
@@ -548,7 +558,7 @@ for chan = 1,2 do
     }
 
     patcher.add_destination_and_param{
-        type = 'control', id = 'pm_freq_'..chan, name = 'pm frq',
+        type = 'control', id = 'pm_freq_'..chan, name = 'PM frequency',
         controlspec = cs.def{ min = 0, max = 17, default = 16, units = 'v' },
         action = function(v)
             local hz = (1/5) * 2^v
@@ -558,8 +568,9 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
+    nicknames['PM frequency'] = 'pm frq'
     patcher.add_destination_and_param{
-        type = 'control', id = 'pm_freq_lag_'..chan, name = 'pm lag',
+        type = 'control', id = 'pm_freq_lag_'..chan, name = 'PM lag',
         controlspec = cs.def{ min = 0, max = 3, default = 0.25, units = 'v' },
         action = function(v)
             engine.mod_freq_slew(chan, v)
@@ -569,7 +580,7 @@ for chan = 1,2 do
         end
     }
     patcher.add_destination_and_param{
-        type = 'control', id = 'pm_depth_'..chan, name = 'pm dep',
+        type = 'control', id = 'pm_depth_'..chan, name = 'PM depth',
         controlspec = cs.def{ 
             min = 0, max = 5, default = 0, units = 'v',
             quantum = 1/100/5*2
@@ -582,15 +593,7 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    params:add{
-        type = 'option', id = 'pm_source_'..chan, name = 'pm src',
-        options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
-        action = function(v)
-            engine.mod_source(chan, v)
-
-            crops.dirty.screen = true
-        end
-    }
+    nicknames['PM depth'] = 'pm dep'
 end
 --add LFO params
 for i = 1,2 do
@@ -661,4 +664,19 @@ do
             end
         }
     end
+end
+
+-- add engine options
+do
+    params:add_separator('engine options')
+    
+    params:add{
+        type = 'option', id = 'pm_source', name = 'pm source',
+        options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
+        action = function(v)
+            for chan = 1,2 do
+                engine.mod_source(chan, v)
+            end
+        end
+    }
 end
