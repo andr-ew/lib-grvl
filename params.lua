@@ -48,6 +48,15 @@ do
         if buf == vals.buf[chan] then
             position('write', chan, 0)
 
+            if params:get('octave_write_'..chan) > 0 then
+                params:set('octave_write_'..chan, 0, silent)
+                vals.oct_w[chan] = 0
+            end
+            if params:get('reverse_write_'..chan) > 0 then
+                params:set('reverse_write_'..chan, 0, silent)
+                vals.oct_w[chan] = 0
+            end
+
             params:set('record_'..chan, 1, silent)
             vals.rec[chan] = 1
 
@@ -213,6 +222,8 @@ do
                 params:lookup_param('loop_start_'..chan):bang()
                 params:lookup_param('loop_end_'..chan):bang()
                 params:lookup_param('record_'..chan):bang()
+                params:lookup_param('octave_write_'..chan):bang()
+                params:lookup_param('reverse_write_'..chan):bang()
 
                 return
             end
@@ -237,6 +248,8 @@ do
                     params:lookup_param('loop_start_'..chan):bang()
                     params:lookup_param('loop_end_'..chan):bang()
                     params:lookup_param('record_'..chan):bang()
+                    params:lookup_param('octave_write_'..chan):bang()
+                    params:lookup_param('reverse_write_'..chan):bang()
 
                     return
                 end
@@ -251,6 +264,8 @@ do
                     params:lookup_param('loop_start_'..chan):bang()
                     params:lookup_param('loop_end_'..chan):bang()
                     params:lookup_param('record_'..chan):bang()
+                    params:lookup_param('octave_write_'..chan):bang()
+                    params:lookup_param('reverse_write_'..chan):bang()
 
                     return
                 end
@@ -691,3 +706,53 @@ do
         end
     }
 end
+
+function grvl.reset_params()
+    -- local silent = true
+
+    for buf = 1,2 do
+        -- params:set('record_'..chan, 0, silent)
+        -- params:delta('clear_'..chan)
+
+        clear(buf)
+    end
+end
+
+local function action_read(file, silent, slot)
+    print('pset action read', file, silent, slot)
+
+    params:bang()
+    
+    grvl.reset_params()
+end
+
+params.action_read = action_read
+
+--add pset params
+do
+    params:add_separator('pset')
+
+    params:add{
+        id = 'reset all params', type = 'binary', behavior = 'trigger',
+        action = function()
+            for _,p in ipairs(params.params) do if p.save then
+                params:set(p.id, p.default or (p.controlspec and p.controlspec.default) or 0, true)
+            end end
+
+            params:bang()
+        end
+    }
+    params:add{
+        id = 'overwrite default pset', type = 'binary', behavior = 'trigger',
+        action = function()
+            params:write()
+        end
+    }
+    params:add{
+        id = 'autosave pset', type = 'option', options = { 'yes', 'no' },
+        action = function()
+            params:write()
+        end
+    }
+end
+
