@@ -448,8 +448,8 @@ for chan = 1,2 do
     }
 
     patcher.add_destination_and_param{
-        type = 'number', id = 'bit_depth_'..chan, name = 'sediment',
-        min = 4, max = 9, default = 9,
+        type = 'control', id = 'bits_fine_'..chan, name = 'sediment (fine)',
+        controlspec = cs.def{ min = 1, max = 10, default = 9, units = 'v' },
         action = function(v)
             engine.bit_depth(chan, v)
 
@@ -458,7 +458,15 @@ for chan = 1,2 do
             crops.dirty.arc = true
         end
     }
-    nicknames['sediment'] = 'SEDMT'
+    nicknames['sediment (fine)'] = 'SEDMT'
+    patcher.add_destination_and_param{
+        type = 'number', id = 'bit_depth_'..chan, name = 'sediment (coarse)',
+        min = 4, max = 9, default = 9,
+        action = function(v)
+            params:set('bits_fine_'..chan, v)
+        end
+    }
+    nicknames['sediment (coarse)'] = 'CRSED'
     patcher.add_destination_and_param{
         type = 'number', id = 'detritus_'..chan, name = 'detritus',
         min = 1, max = 6, default = 1,

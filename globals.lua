@@ -62,9 +62,9 @@ grvl.arc_focus = {
 grvl.norns_focus = 1
 
 grvl.map = { 
-    { 'level_',      'old_',      'level_',      'old_'      },
-    { 'pm_freq_',    'pm_depth_', 'pm_freq_',    'pm_depth_' },
-    { 'loop_start_', 'loop_end_', 'loop_start_', 'loop_end_' },
-    { 'loop_end_',   'rate_',     'loop_end_',   'rate_'     }
+    { 'level_',       'old_',      'level_',       'old_'      },
+    { 'bits_fine_',   'rate_',     'bits_fine_',   'rate_'     },
+    { 'loop_start_',  'loop_end_', 'loop_start_',  'loop_end_' },
+    { 'pm_freq_',     'pm_depth_', 'pm_freq_',     'pm_depth_' },
 }
 
