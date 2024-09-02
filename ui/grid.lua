@@ -101,7 +101,7 @@ local function Channel()
         _buffer('buffer_'..chan, grvl.active_src, {
             x = left and 3 or 13, y = 1,
             size = 2,
-            levels = { 0, 15 },
+            levels = { 4, 15 },
             state = grvl.of_param('buffer_'..chan),
         })
 
@@ -196,7 +196,9 @@ local function Channel()
     end
 end
 
-local function App()
+local function App(args)
+    local wide = args.wide
+
     local _channels = {}
     for i = 1,2 do _channels[i] = Channel() end
 
@@ -244,12 +246,12 @@ local function App()
         end
 
 
-        for side,_focus in pairs(_grid_focuses) do
+        if not wide then for side,_focus in pairs(_grid_focuses) do
             _focus{
-                x = side == 'left' and 3 or 13, y = 2, size = 2, levels = { 4, 15 },
+                x = side == 'left' and 3 or 13, y = 2, size = 2, levels = { 0, 15 },
                 state = crops.of_variable(grvl.grid_focus[side], set_grid_focus, side)
             }
-        end
+        end end
 
         _channels[1]{
             side = 'left', channel = grvl.grid_focus.left,
