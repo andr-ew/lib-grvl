@@ -56,6 +56,8 @@ do
                 params:set('reverse_write_'..chan, 0, silent)
                 vals.oct_w[chan] = 0
             end
+            params:set('rate_'..chan, 0, silent)
+            vals.rate[chan] = 0
 
             params:set('record_'..chan, 1, silent)
             vals.rec[chan] = 1
@@ -94,6 +96,7 @@ do
         crops.dirty.arc = true
     end
 
+    vals.rate_linear = false
     vals.play = { 1, 1 }
     vals.rate = { 0, 0 }
     vals.rev_w = { 0, 0 } -- = (v == 0) and 1 or -1
@@ -107,17 +110,18 @@ do
 
     --TODO: call when start passes end / vice-versa
     function update.rate(chan)
-        local play = vals.play[chan]
         local rate = vals.rate[chan]
+        rate = (vals.rate_linear and (rate + 1) or 2^rate)
+
+        local play = vals.play[chan]
         local rev_w = vals.rev_w[chan]
         local oct_w = vals.oct_w[chan] 
-        vals.rate_w[chan] = 2^oct_w * 2^rate * rev_w * play
+        vals.rate_w[chan] = 2^oct_w * rate * rev_w * play
         
         local play = vals.play[chan]
-        local rate = vals.rate[chan]
         local rev_r = vals.rev_r[chan]
         local oct_r = vals.oct_r[chan]
-        vals.rate_r[chan] = 2^oct_r * 2^rate * rev_r * play
+        vals.rate_r[chan] = 2^oct_r * rate * rev_r * play
         
         local r_w = vals.rate_w[chan]
         local r_r = vals.rate_r[chan]
@@ -224,6 +228,7 @@ do
                 params:lookup_param('record_'..chan):bang()
                 params:lookup_param('octave_write_'..chan):bang()
                 params:lookup_param('reverse_write_'..chan):bang()
+                params:lookup_param('rate_'..chan):bang()
 
                 return
             end
@@ -250,6 +255,7 @@ do
                     params:lookup_param('record_'..chan):bang()
                     params:lookup_param('octave_write_'..chan):bang()
                     params:lookup_param('reverse_write_'..chan):bang()
+                    params:lookup_param('rate_'..chan):bang()
 
                     return
                 end
@@ -266,6 +272,7 @@ do
                     params:lookup_param('record_'..chan):bang()
                     params:lookup_param('octave_write_'..chan):bang()
                     params:lookup_param('reverse_write_'..chan):bang()
+                    params:lookup_param('rate_'..chan):bang()
 
                     return
                 end
@@ -281,19 +288,21 @@ do
     end
 end
 
-local function clear(buf)
+local function clear(buf, reset)
     engine.clear_buf(buf)
 
     for chan = 1,2 do
         if buf == vals.buf[chan] then
             local len = vals.len_rel[chan]
-            if (not buffers[buf].manual) or (len==0) then
+            if (not buffers[buf].manual) or (len==0) or reset then
                 params:set('record_'..chan, 0, silent)
                 params:set('loop_start_'..chan, 0, silent)
                 params:set('loop_end_'..chan, 0, silent)
+                params:set('rate_'..chan, 0, silent)
                 vals.rec[chan] = 0
                 vals.st_rel[chan] = 0
                 vals.en_rel[chan] = 0
+                vals.rate[chan] = 0
             end
         end
     end
@@ -306,6 +315,7 @@ local function clear(buf)
             params:lookup_param('loop_start_'..chan):bang()
             params:lookup_param('loop_end_'..chan):bang()
             params:lookup_param('record_'..chan):bang()
+            params:lookup_param('rate_'..chan):bang()
         end
     end
 end
@@ -397,7 +407,7 @@ for chan = 1,2 do
 
     patcher.add_destination_and_param{
         type = 'control', id = 'rate_'..chan, name = 'abrasion (fine)',
-        controlspec = cs.def{ 
+        controlspec = cs.def{
             min = -5, max = 5, default = 0,
             quantum = 1/100/10, units = 'v',
         },
@@ -551,7 +561,7 @@ for chan = 1,2 do
             crops.dirty.screen = true
             crops.dirty.arc = true
         end
-    } 
+   } 
     patcher.add_destination_and_param{
         type = 'control', id = 'lowpass_q_'..chan, name = 'lp q',
         controlspec = cs.def{ min = 0, max = 5, default = 0, units = 'v' },
@@ -620,6 +630,7 @@ for chan = 1,2 do
         end
     }
     nicknames['PM depth'] = 'pm dep'
+
 end
 --add LFO params
 for i = 1,2 do
@@ -695,13 +706,60 @@ end
 -- add engine options
 do
     params:add_separator('engine options')
-    
+
+    for chan = 1,2 do
+        params:add{
+            id ='input_channel_'..chan, name = 'channel '..chan..' input',
+            type = 'option', options = { 'L', 'R' },
+            action = function(v)
+                engine.adc_channel(chan, v - 1)
+            end
+        }
+    end
+
+    params:add{
+        id = 'drive', name = 'drive', type = 'control',
+        controlspec = cs.def { min = 0, max = 1, default = 0.01, step = 1/1000, quant = 1/1000 },
+        action = function(v)
+            for chan = 1,2 do
+                engine.drive(chan, v)
+            end
+        end
+    }
+    params:add{
+        id = 'bitnoise', name = 'bitnoise', type = 'control',
+        controlspec = cs.def { min = 0, max = 1, default = 0.5, step = 1/1000, quant = 1/1000 },
+        action = function(v)
+            for chan = 1,2 do
+                engine.bitnoise(chan, v)
+            end
+        end
+    }
     params:add{
         type = 'option', id = 'pm_source', name = 'pm source',
         options = { 'in R', 'sin', 'tri', 'saw', 'sqr', 'noise' }, default = 3, 
         action = function(v)
             for chan = 1,2 do
                 engine.mod_source(chan, v)
+            end
+        end
+    }
+
+    params:add{
+        type = 'option', id = 'abrasion_fine_mode', name = 'abrasion (fine) mode',
+        options = { 'exp', 'linear' }, default = 1, 
+        action = function(v)
+            vals.rate_linear = v==2
+            
+            for chan = 1,2 do update.rate(chan) end
+        end
+    }
+    params:add{
+        type = 'option', id = 'filter_bypass', name = 'filter bypass',
+        options = { 'off', 'bypassed' }, default = 1, 
+        action = function(v)
+            for chan = 1,2 do
+                engine.filter_enable(chan, (v==1) and 1 or 0)
             end
         end
     }
@@ -714,7 +772,7 @@ function grvl.reset_params()
         -- params:set('record_'..chan, 0, silent)
         -- params:delta('clear_'..chan)
 
-        clear(buf)
+        clear(buf, true)
     end
 end
 
@@ -755,4 +813,3 @@ do
         end
     }
 end
-
